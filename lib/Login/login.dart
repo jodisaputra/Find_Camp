@@ -1,10 +1,8 @@
-import 'package:find_camp/Services/auth_service.dart';
 import 'package:find_camp/Widget/brandbutton.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:find_camp/MainMenu/MainMenu.dart';
 import 'package:find_camp/Style/theme.dart';
+import 'package:find_camp/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,113 +12,93 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _authService = AuthService();
-
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
 
-  Future<void> _signInWithGoogle(BuildContext context) async {
-    setState(() => _isLoading = true);
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
-      final FirebaseAuth auth = FirebaseAuth.instance;
+      // First test the API connection
+      await _authService.testApiConnection();
 
-      // Trigger the Google Sign-In flow
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return;
+      // Then proceed with Google Sign-In
+      final result = await _authService.signInWithGoogle(context);
 
-      // Get authentication details
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      // Create credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in to Firebase with credential
-      final UserCredential userCredential =
-          await auth.signInWithCredential(credential);
-
-      // Get the Firebase ID token
-      final String? idToken = await userCredential.user?.getIdToken();
-
-      if (idToken == null) throw Exception('Failed to get Firebase ID token');
-
-      // Send to your Laravel API
-      final response = await _authService.loginWithGoogle(idToken);
-
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MainMenu(
-            username: response['user']['name'] ?? 'Guest',
+      if (result['success']) {
+        // Navigate to MainMenu with user info
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainMenu(
+              username: result['user'].name,
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${result['message']}')),
+        );
+      }
     } catch (e) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
+        SnackBar(content: Text('Sorry There Is A Problem >_<: $e')),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  Future<void> _signInWithEmailPassword(BuildContext context) async {
+  Future<void> _login() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        const SnackBar(
+            content: Text('Please enter your username and password')),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      print('Starting login process'); // Debug log
-
-      final response = await _authService.loginWithEmailPassword(
+      final result = await _authService.login(
         _emailController.text,
         _passwordController.text,
       );
 
-      print('Login successful, response: $response'); // Debug log
-
-      if (!mounted) return;
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login successful!')),
-      );
-
-      // Navigate to MainMenu
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MainMenu(
-            username: response['user']['name'] ?? 'Guest',
+      if (result['success']) {
+        // Navigate to MainMenu with user info
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainMenu(
+              username: result['user'].name,
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${result['message']}')),
+        );
+      }
     } catch (e) {
-      print('Login error: $e'); // Debug log
-
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Login failed: ${e.toString().replaceAll('Exception:', '')}'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Sorry There Is A Problem >_<: $e')),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -148,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
-                labelText: 'Email',
+                labelText: 'Username or Email',
                 filled: true,
                 fillColor: Colors.white,
                 border:
@@ -189,14 +167,13 @@ class _LoginPageState extends State<LoginPage> {
                 padding: EdgeInsets.symmetric(
                     horizontal: screenWidth * 0.3, vertical: 15),
               ),
-              onPressed:
-                  _isLoading ? null : () => _signInWithEmailPassword(context),
+              onPressed: _isLoading
+                  ? null
+                  : () {
+                      _login();
+                    },
               child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white),
-                    )
+                  ? const CircularProgressIndicator(color: Colors.white)
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
@@ -218,8 +195,8 @@ class _LoginPageState extends State<LoginPage> {
               label: "Continue with Google",
               onPressed: _isLoading
                   ? null
-                  : () async {
-                      await _signInWithGoogle(context);
+                  : () {
+                      _signInWithGoogle();
                     },
               backgroundColor: Colors.white,
               textColor: Colors.black,

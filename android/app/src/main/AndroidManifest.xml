@@ -1,9 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Izin akses internet -->
     <uses-permission android:name="android.permission.INTERNET" />
-<!--    izin akses ke kamera dan storage-->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <queries>
         <!-- Mendukung skema URL wa.me -->

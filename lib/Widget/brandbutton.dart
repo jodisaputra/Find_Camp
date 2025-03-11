@@ -40,9 +40,9 @@ class BrandButton extends StatelessWidget {
             // Adjust the size of the icon to fit the button height
             brandIcon is Image
                 ? SizedBox(
-              height: height * 0.5,
-              child: brandIcon,
-            )
+                    height: height * 0.5,
+                    child: brandIcon,
+                  )
                 : brandIcon,
             const SizedBox(width: 15),
             Text(

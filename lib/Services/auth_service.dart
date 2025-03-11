@@ -1,199 +1,251 @@
 import 'dart:convert';
-import 'dart:io' as IO;
-import 'package:find_camp/Config/config.dart';
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
+import '../models/user_model.dart';
+import 'package:logging/logging.dart'; // Add this package for better logging
 
 class AuthService {
-  final String baseUrl = '${Config.BASE_URL}/api/auth';
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+      'openid', // Add this for ID token
+    ],
+  );
 
-  bool _validateUrl() {
-    try {
-      final uri = Uri.parse(baseUrl);
-      return uri.isScheme('HTTPS');
-    } catch (e) {
-      print('Invalid URL: $e');
-      return false;
-    }
+  final Logger _logger = Logger('AuthService');
+
+  // Singleton pattern
+  static final AuthService _instance = AuthService._internal();
+
+  factory AuthService() {
+    return _instance;
   }
 
-  // Add this method for immediate response
-  String getInitialUserName() {
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.displayName ?? 'Guest';
+  AuthService._internal() {
+    // Initialize logging
+    Logger.root.level = Level.ALL;
+    Logger.root.onRecord.listen((record) {
+      print('${record.level.name}: ${record.time}: ${record.message}');
+      if (record.error != null) {
+        print('Error details: ${record.error}');
+        print('Stack trace: ${record.stackTrace}');
+      }
+    });
   }
 
-  Future<Map<String, dynamic>> getUserDataFromServer() async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) {
-        throw Exception('No user logged in');
-      }
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/user'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'firebase_uid': currentUser.uid,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final userData = jsonDecode(response.body);
-        await _storeUserData(userData['user']);
-        return userData['user'];
-      } else {
-        final errorResponse = jsonDecode(response.body);
-        throw Exception(errorResponse['message'] ?? 'Failed to get user data');
-      }
-    } catch (e) {
-      print('Error getting user data from server: $e');
-      // Try to get cached data
-      final cachedData = await getCachedUserData();
-      if (cachedData != null) {
-        return cachedData;
-      }
-      throw Exception('Failed to get user data: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> loginWithGoogle(String idToken) async {
+  // Regular email/password login
+  Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'idToken': idToken,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        if (responseData['user'] != null) {
-          await _storeUserData(responseData['user']);
-        }
-        return responseData;
-      } else {
-        final errorResponse = jsonDecode(response.body);
-        throw Exception(errorResponse['message'] ?? 'Failed to login');
-      }
-    } catch (e) {
-      throw Exception('Failed to login: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> loginWithEmailPassword(String email,
-      String password) async {
-    try {
-      print('Attempting to login with email: $email');
-
-      final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        Uri.parse('${ApiConfig.baseUrl}/api/login'),
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
           'password': password,
         }),
       );
 
-      print('Laravel Response: ${response.body}');
+      final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-
-        if (responseData['firebase_token'] != null) {
-          try {
-            await FirebaseAuth.instance
-                .signInWithCustomToken(responseData['firebase_token']);
-            print('Firebase Authentication successful');
-
-            if (responseData['user'] != null) {
-              await _storeUserData(responseData['user']);
-            }
-
-            final userData = await getUserDataFromServer();
-            responseData['user_details'] = userData;
-          } catch (firebaseError) {
-            print('Firebase Error: $firebaseError');
-            throw Exception('Firebase authentication failed: $firebaseError');
-          }
-        }
-
-        return responseData;
+        // Save token and user data
+        await _saveAuthData(data);
+        return {
+          'success': true,
+          'user': User.fromJson(data['user']),
+        };
       } else {
-        final errorResponse = jsonDecode(response.body);
-        throw Exception(errorResponse['message'] ?? 'Failed to login');
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to login',
+        };
       }
     } catch (e) {
-      print('Login Error: $e');
-      throw Exception('Failed to login: $e');
+      return {
+        'success': false,
+        'message': 'An error occurred: $e',
+      };
     }
   }
 
-  Future<void> _storeUserData(Map<String, dynamic> userData) async {
+  // Add this method to your AuthService class
+  Future<void> testApiConnection() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_data', jsonEncode(userData));
-      print('User data stored successfully');
+      final response =
+          await http.get(Uri.parse('${ApiConfig.baseUrl}/api/test'));
+      _logger.info('Test API connection: ${response.statusCode}');
+      _logger.info('Test API response: ${response.body}');
     } catch (e) {
-      print('Error storing user data: $e');
+      _logger.severe('API connection test failed: $e');
     }
   }
 
-  Future<Map<String, dynamic>?> getCachedUserData() async {
+  // Google Sign In
+  Future<Map<String, dynamic>> signInWithGoogle(BuildContext context) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userDataString = prefs.getString('user_data');
-      if (userDataString != null) {
-        return jsonDecode(userDataString);
+      _logger.info('Starting Google Sign-In process');
+
+      final String fullUrl =
+          '${ApiConfig.baseUrl}${ApiConfig.googleCallbackEndpoint}';
+      _logger.info('Full URL being called: $fullUrl');
+
+      // Trigger the Google Sign-In flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        _logger.warning('Google sign in was cancelled by user');
+        return {
+          'success': false,
+          'message': 'Google sign in was cancelled',
+        };
       }
-    } catch (e) {
-      print('Error getting cached user data: $e');
+
+      _logger
+          .info('Successfully authenticated with Google: ${googleUser.email}');
+
+      // Get authentication details
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      _logger.info('ID Token: ${googleAuth.idToken ?? "NULL"}');
+      _logger.info('Access Token: ${googleAuth.accessToken ?? "NULL"}');
+
+      // Check if either token is available
+      String tokenToSend;
+      String tokenField;
+
+      if (googleAuth.idToken != null && googleAuth.idToken!.isNotEmpty) {
+        _logger.info('Using ID token for authentication');
+        tokenToSend = googleAuth.idToken!;
+        tokenField = 'id_token';
+      } else if (googleAuth.accessToken != null &&
+          googleAuth.accessToken!.isNotEmpty) {
+        _logger.info('Using access token as fallback');
+        tokenToSend = googleAuth.accessToken!;
+        tokenField = 'access_token';
+      } else {
+        _logger.severe('Failed to obtain any token from Google');
+        return {
+          'success': false,
+          'message': 'Failed to obtain authentication tokens from Google',
+        };
+      }
+
+      // Prepare the request body
+      final requestBody = jsonEncode({
+        tokenField: tokenToSend,
+      });
+      _logger
+          .fine('Request body prepared (token length: ${tokenToSend.length})');
+
+      // Send token to Laravel backend with timeout
+      final response = await http
+          .post(
+        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.googleCallbackEndpoint}'),
+        headers: {'Content-Type': 'application/json'},
+        body: requestBody,
+      )
+          .timeout(Duration(seconds: 30), onTimeout: () {
+        _logger.severe('Request timed out after 30 seconds');
+        throw Exception('Connection timeout');
+      });
+
+      _logger.info(
+          'Received response from backend. Status code: ${response.statusCode}');
+      _logger.fine(
+          'Response body: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}...');
+
+      // Check if response is valid JSON
+      if (response.body.trim().startsWith('<!DOCTYPE html>')) {
+        _logger.severe(
+            'Received HTML instead of JSON. Server may be returning an error page.');
+        return {
+          'success': false,
+          'message': 'Server returned HTML instead of JSON. Check server logs.',
+        };
+      }
+
+      Map<String, dynamic> data;
+      try {
+        data = jsonDecode(response.body);
+      } catch (e) {
+        _logger.severe('Failed to parse response as JSON', e);
+        return {
+          'success': false,
+          'message':
+              'Invalid response format: ${response.body.substring(0, 100)}...',
+        };
+      }
+
+      if (response.statusCode == 200) {
+        // Save token and user data
+        await _saveAuthData(data);
+        _logger.info('Successfully authenticated and saved user data');
+        return {
+          'success': true,
+          'user': User.fromJson(data['user']),
+        };
+      } else {
+        _logger.warning(
+            'Authentication failed with status code: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to authenticate with Google',
+        };
+      }
+    } catch (e, stackTrace) {
+      _logger.severe('Error during Google Sign-In', e, stackTrace);
+      return {
+        'success': false,
+        'message': 'An error occurred: $e',
+      };
     }
+  }
+
+  // Store auth data in SharedPreferences
+  Future<void> _saveAuthData(Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', data['access_token']);
+    await prefs.setString('token_type', data['token_type']);
+    await prefs.setString('expires_at', data['expires_at']);
+    await prefs.setString('user', jsonEncode(data['user']));
+  }
+
+  // Get current user
+  Future<User?> getCurrentUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userData = prefs.getString('user');
+
+    if (userData != null) {
+      return User.fromJson(jsonDecode(userData));
+    }
+
     return null;
   }
 
-  // Fixed: Changed to return Future<String>
-  Future<String> getCurrentUserName() async {
-    try {
-      final userData = await getUserDataFromServer();
-      return userData['name'] ?? 'Guest';
-    } catch (e) {
-      final user = FirebaseAuth.instance.currentUser;
-      return user?.displayName ?? 'Guest';
-    }
+  // Get token
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
   }
 
-  Future<String?> getCurrentUserEmail() async {
-    try {
-      final userData = await getUserDataFromServer();
-      return userData['email'];
-    } catch (e) {
-      final user = FirebaseAuth.instance.currentUser;
-      return user?.email;
-    }
+  // Check if user is logged in
+  Future<bool> isLoggedIn() async {
+    final token = await getToken();
+    return token != null;
   }
 
-  User? getCurrentUser() {
-    return FirebaseAuth.instance.currentUser;
-  }
-
-  Future<void> signOut() async {
+  // Logout
+  Future<void> logout() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('user_data');
-      await FirebaseAuth.instance.signOut();
+      await prefs.clear();
+      await _googleSignIn.signOut();
     } catch (e) {
-      print('Error during sign out: $e');
-      throw Exception('Failed to sign out: $e');
+      print('Error during logout: $e');
     }
   }
 }

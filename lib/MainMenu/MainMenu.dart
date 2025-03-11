@@ -1,10 +1,9 @@
-import 'package:find_camp/Services/api_service.dart';
-import 'package:find_camp/Services/auth_service.dart';
-import 'package:find_camp/models/country.dart';
-import 'package:find_camp/models/region.dart';
+import 'package:find_camp/models/country_model.dart';
+import 'package:find_camp/models/region_model.dart';
 import 'package:flutter/material.dart';
 import 'package:find_camp/Widget/navbar.dart';
 import 'package:find_camp/isian/country.dart';
+import 'package:find_camp/services/api_service.dart';
 
 class MainMenu extends StatefulWidget {
   final String username;
@@ -16,47 +15,24 @@ class MainMenu extends StatefulWidget {
 }
 
 class _MainMenuState extends State<MainMenu> {
-  final _authService = AuthService();
-  final _apiService = ApiService();
-  late String username;
-  bool _isLoadingUser = true;
-
   final TextEditingController _searchController = TextEditingController();
+  final ApiService _apiService = ApiService();
+
   String _searchText = '';
   String _selectedRegion = '';
+  int? _selectedRegionId;
 
   List<Region> _regions = [];
   List<Country> _countries = [];
   List<Country> _filteredCountries = [];
-  bool _isLoading = true;
 
-  // final List<Map<String, String>> regions = [
-  //   {'name': 'Southeast Asia', 'asset': 'assets/Image/southeast_asia.png'},
-  //   {'name': 'West Asia', 'asset': 'assets/Image/west_asia.png'},
-  //   {'name': 'East Asia', 'asset': 'assets/Image/east_asia.png'},
-  //   {'name': 'South Asia', 'asset': 'assets/Image/south_asia.png'},
-  //   {'name': 'Middle Asia', 'asset': 'assets/Image/middle_asia.png'},
-  // ];
-  //
-  // final List<Map<String, dynamic>> countries = [
-  //   {'name': 'South Korea', 'region': 'East Asia', 'flag': 'assets/Image/south_korea2.jpg', 'rating': 4.8},
-  //   {'name': 'Myanmar', 'region': 'Southeast Asia', 'flag': 'assets/Image/myanmar.png', 'rating': 4.7},
-  //   {'name': 'Singapore', 'region': 'Southeast Asia', 'flag': 'assets/Image/singapore2.jpg', 'rating': 4.9},
-  //   {'name': 'Malaysia', 'region': 'Southeast Asia', 'flag': 'assets/Image/malaysia2.jpeg', 'rating': 4.6},
-  //   {'name': 'Philippines', 'region': 'Southeast Asia', 'flag': 'assets/Image/philippines.png', 'rating': 4.5},
-  //   {'name': 'Indonesia', 'region': 'Southeast Asia', 'flag': 'assets/Image/indonesia.jpg', 'rating': 4.4},
-  // ];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    username = widget.username.isNotEmpty
-        ? widget.username
-        : _authService.getInitialUserName();
-    _loadInitialData();
-
     _loadData();
-    _loadUserData();
 
     _searchController.addListener(() {
       setState(() {
@@ -66,85 +42,85 @@ class _MainMenuState extends State<MainMenu> {
     });
   }
 
-  Future<void> _loadInitialData() async {
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
-      final name = await _authService.getCurrentUserName();
+      // Load regions
+      final regionsData = await _apiService.getRegions();
+      final List<Region> regions =
+          regionsData.map((data) => Region.fromJson(data)).toList();
+
+      // Load countries
+      final countriesData = await _apiService.getCountries();
+      final List<Country> countries =
+          countriesData.map((data) => Country.fromJson(data)).toList();
+
       if (mounted) {
         setState(() {
-          username = name;
-          _isLoadingUser = false;
+          _regions = regions;
+          _countries = countries;
+          _filteredCountries = countries;
+          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoadingUser = false);
+        setState(() {
+          _errorMessage = 'Failed to load data: $e';
+          _isLoading = false;
+        });
       }
-    }
-    _loadData();
-  }
-
-  Future<void> _loadUserData() async {
-    try {
-      final userData = await _authService.getUserDataFromServer();
-      setState(() {
-        username = userData['name'] ?? 'Guest';
-        _isLoadingUser = false;
-      });
-    } catch (e) {
-      setState(() {
-        username = widget.username.isNotEmpty
-            ? widget.username
-            : _authService.getInitialUserName();
-        _isLoadingUser = false;
-      });
-    }
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    try {
-      final regionsData = await _apiService.getRegions();
-      final countriesData = await _apiService.getCountries();
-
-      setState(() {
-        _regions = regionsData.map((data) => Region.fromJson(data)).toList();
-        _countries =
-            countriesData.map((data) => Country.fromJson(data)).toList();
-        _filteredCountries = _countries;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      // Handle error - show snackbar or dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e')),
-      );
     }
   }
 
   void _filterCountries() async {
-    setState(() => _isLoading = true);
-    try {
-      List<Map<String, dynamic>> filteredData;
-      if (_searchText.isNotEmpty) {
-        filteredData = await _apiService.searchCountries(_searchText);
-      } else if (_selectedRegion.isNotEmpty) {
-        filteredData = await _apiService.getCountriesByRegion(_selectedRegion);
+    if (_searchText.isEmpty && _selectedRegionId == null) {
+      setState(() {
+        _filteredCountries = _countries;
+      });
+    } else {
+      try {
+        // Let the API handle filtering
+        final countriesData = await _apiService.getCountries(
+          search: _searchText.isEmpty ? null : _searchText,
+          regionId: _selectedRegionId,
+        );
+
+        if (mounted) {
+          setState(() {
+            _filteredCountries =
+                countriesData.map((data) => Country.fromJson(data)).toList();
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error filtering countries: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  void _selectRegion(String regionName, int regionId) {
+    setState(() {
+      if (_selectedRegion == regionName) {
+        // Deselect current region
+        _selectedRegion = '';
+        _selectedRegionId = null;
       } else {
-        filteredData = await _apiService.getCountries();
+        // Select new region
+        _selectedRegion = regionName;
+        _selectedRegionId = regionId;
       }
 
-      setState(() {
-        _filteredCountries =
-            filteredData.map((data) => Country.fromJson(data)).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error filtering countries: $e')),
-      );
-    }
+      _searchController.clear();
+      _filterCountries();
+    });
   }
 
   @override
@@ -156,24 +132,30 @@ class _MainMenuState extends State<MainMenu> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 25),
-            _buildGreeting(),
-            const SizedBox(height: 20),
-            _buildSearchBar(),
-            const SizedBox(height: 20),
-            if (_searchText.isEmpty) ...[
-              _buildRegionsRow(),
-              const SizedBox(height: 20),
-            ],
-            _buildCountryGrid(),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(
+                  child: Text(_errorMessage!,
+                      style: const TextStyle(color: Colors.red)))
+              : Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 25),
+                      _buildGreeting(),
+                      const SizedBox(height: 20),
+                      _buildSearchBar(),
+                      const SizedBox(height: 20),
+                      if (_searchText.isEmpty) ...[
+                        _buildRegionsRow(),
+                        const SizedBox(height: 20),
+                      ],
+                      _buildCountryGrid(),
+                    ],
+                  ),
+                ),
       bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: 0,
         onTap: (index) {
@@ -209,18 +191,10 @@ class _MainMenuState extends State<MainMenu> {
           children: [
             const Text('Hello Fams!',
                 style: TextStyle(fontSize: 14, color: Colors.grey)),
-            _isLoadingUser
-                ? const SizedBox(
-                    width: 80,
-                    child: LinearProgressIndicator(),
-                  )
-                : Text(
-                    username,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            Text(
+              widget.username,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ],
@@ -247,66 +221,37 @@ class _MainMenuState extends State<MainMenu> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: _regions
-            .map((region) => _buildRegionItem(region.name, region.imageUrl))
-            .toList(),
+        children: _regions.map((region) => _buildRegionItem(region)).toList(),
       ),
     );
   }
 
-  void _selectRegion(String region) async {
-    setState(() {
-      _selectedRegion = region == _selectedRegion ? '' : region;
-      _searchController.clear();
-    });
-
-    // Call API to filter countries by region
-    setState(() => _isLoading = true);
-    try {
-      if (_selectedRegion.isEmpty) {
-        // If no region selected, get all countries
-        final countriesData = await _apiService.getCountries();
-        setState(() {
-          _filteredCountries =
-              countriesData.map((data) => Country.fromJson(data)).toList();
-        });
-      } else {
-        // Get countries filtered by selected region
-        final filteredData =
-            await _apiService.getCountriesByRegion(_selectedRegion);
-        setState(() {
-          _filteredCountries =
-              filteredData.map((data) => Country.fromJson(data)).toList();
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error filtering by region: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Widget _buildRegionItem(String regionName, String? imageUrl) {
+  Widget _buildRegionItem(Region region) {
     return GestureDetector(
-      onTap: () => _selectRegion(regionName),
+      onTap: () => _selectRegion(region.name, region.id),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Column(
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundColor: _selectedRegion == regionName
+              backgroundColor: _selectedRegion == region.name
                   ? Colors.blueAccent
                   : Colors.grey[200],
-              backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-              child: imageUrl == null
-                  ? Icon(Icons.image)
-                  : null, // Show icon if no image
+              child: ClipOval(
+                child: Image.network(
+                  region.imageUrl,
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.image, size: 30);
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 8),
-            Text(regionName, style: const TextStyle(fontSize: 12)),
+            Text(region.name, style: const TextStyle(fontSize: 12)),
           ],
         ),
       ),
@@ -314,46 +259,35 @@ class _MainMenuState extends State<MainMenu> {
   }
 
   Widget _buildCountryGrid() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return Expanded(
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.85,
-          mainAxisSpacing: 5,
-          crossAxisSpacing: 5,
-        ),
-        itemCount: _filteredCountries.length,
-        itemBuilder: (context, index) {
-          final country = _filteredCountries[index];
-          return _buildCountryCard(
-            name: country.name,
-            region: country.region,
-            flagUrl: country.flagUrl,
-            rating: country.rating,
-          );
-        },
-      ),
+      child: _filteredCountries.isEmpty
+          ? const Center(child: Text('No countries found'))
+          : GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.85,
+                mainAxisSpacing: 5,
+                crossAxisSpacing: 5,
+              ),
+              itemCount: _filteredCountries.length,
+              itemBuilder: (context, index) {
+                final country = _filteredCountries[index];
+                return _buildCountryCard(country);
+              },
+            ),
     );
   }
 
-  Widget _buildCountryCard({
-    required String name,
-    required String region,
-    String? flagUrl,
-    required double rating,
-  }) {
+  Widget _buildCountryCard(Country country) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => CountryScreen(
-              name: name,
-              flagAsset: flagUrl ?? '',
+              countryId: country.id,
+              name: country.name,
+              flagAsset: country.flagUrl,
             ),
           ),
         );
@@ -367,62 +301,33 @@ class _MainMenuState extends State<MainMenu> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: flagUrl != null
-                    ? Image.network(
-                        flagUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: Icon(
-                              Icons.error_outline,
-                              size: 40,
-                              color: Colors.red,
-                            ),
-                          );
-                        },
-                      )
-                    : const Center(
-                        child: Icon(
-                          Icons.image_not_supported,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      ),
+                child: FadeInImage.assetNetwork(
+                  placeholder: 'assets/Image/placeholder.png',
+                  image: country.flagUrl,
+                  fit: BoxFit.cover,
+                  imageErrorBuilder: (context, error, stackTrace) {
+                    // Fallback to placeholder if network image fails
+                    return Image.asset(
+                      'assets/Image/placeholder.png',
+                      fit: BoxFit.cover,
+                    );
+                  },
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   children: [
                     Text(
-                      name,
+                      country.name,
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          fontSize: 14, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      region,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      country.regionName,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                       textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -430,7 +335,7 @@ class _MainMenuState extends State<MainMenu> {
                       children: [
                         ...List.generate(5, (index) {
                           return Icon(
-                            index < rating.floor()
+                            index < country.rating.floor()
                                 ? Icons.star
                                 : Icons.star_border,
                             color: Colors.amber,
@@ -439,11 +344,9 @@ class _MainMenuState extends State<MainMenu> {
                         }),
                         const SizedBox(width: 4),
                         Text(
-                          rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
+                          country.rating.toStringAsFixed(1),
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
                     ),
