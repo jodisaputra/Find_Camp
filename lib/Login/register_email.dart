@@ -1,5 +1,9 @@
+// lib/pages/register_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:find_camp/Widget/Button.dart';
+import '../services/auth_service.dart';
+import '../MainMenu/MainMenu.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -9,11 +13,74 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final _formKey = GlobalKey<FormState>(); // Key untuk form validasi
+  final _formKey = GlobalKey<FormState>(); // Key for form validation
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _rePasswordController = TextEditingController();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  Future<void> _register() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final result = await _authService.register(
+          _nameController.text,
+          _emailController.text,
+          _passwordController.text,
+          _rePasswordController.text,
+        );
+
+        if (result['success']) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registration Successful!')),
+          );
+          
+          // Navigate to MainMenu with user info
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MainMenu(
+                username: result['user'].name,
+              ),
+            ),
+          );
+        } else {
+          // Show error message with any specific error details
+          String errorMessage = result['message'];
+          if (result.containsKey('errors') && result['errors'] != null) {
+            // Format validation errors if they exist
+            final errors = result['errors'] as Map<String, dynamic>;
+            final errorList = errors.entries
+                .map((e) => '• ${e.key}: ${(e.value as List).join(', ')}')
+                .join('\n');
+            
+            errorMessage = '$errorMessage\n$errorList';
+          }
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration failed: $e')),
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +103,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 20),
 
-              // Nama input field
+              // Name input field
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -114,19 +181,13 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 20),
 
               // Register Button
-              ButtonFormStyle(
-                textName: 'Register',
-                onPressed: () {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Register Successful!')),
-                    );
-                    Navigator.pushNamed(context, '/home');
-                  }
-                },
-              ),
+              _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ButtonFormStyle(
+                    textName: 'Register',
+                    onPressed: _register,
+                  ),
               const SizedBox(height: 20),
-
 
               Align(
                 alignment: Alignment.center,
@@ -142,5 +203,14 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _rePasswordController.dispose();
+    super.dispose();
   }
 }

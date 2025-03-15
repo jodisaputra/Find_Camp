@@ -48,7 +48,7 @@ class ProfilePage extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           ListTile(
-            title: Text('Logout', style: TextStyle(color: Colors.red)),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: () async {
 
               await FirebaseAuth.instance.signOut();
@@ -57,7 +57,7 @@ class ProfilePage extends StatelessWidget {
 
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => LoginPage()),
+                MaterialPageRoute(builder: (context) => const LoginPage()),
               );
             },
           ),

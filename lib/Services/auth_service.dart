@@ -37,6 +37,59 @@ class AuthService {
     });
   }
 
+  // User registration
+  Future<Map<String, dynamic>> register(
+      String name, 
+      String email, 
+      String password, 
+      String passwordConfirmation) async {
+    try {
+      _logger.info('Starting user registration for: $email');
+      
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        }),
+      ).timeout(const Duration(seconds: 30), onTimeout: () {
+        _logger.severe('Registration request timed out after 30 seconds');
+        throw Exception('Connection timeout');
+      });
+
+      _logger.info('Registration response status code: ${response.statusCode}');
+      
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        // Save token and user data
+        await _saveAuthData(data);
+        _logger.info('User registered successfully: $email');
+        return {
+          'success': true,
+          'user': User.fromJson(data['user']),
+          'message': data['message'] ?? 'Registration successful',
+        };
+      } else {
+        _logger.warning('Registration failed: ${data['message']}');
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to register',
+          'errors': data['errors'],
+        };
+      }
+    } catch (e, stackTrace) {
+      _logger.severe('Error during registration', e, stackTrace);
+      return {
+        'success': false,
+        'message': 'An error occurred during registration: $e',
+      };
+    }
+  }
+
   // Regular email/password login
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
@@ -89,7 +142,7 @@ class AuthService {
     try {
       _logger.info('Starting Google Sign-In process');
 
-      final String fullUrl =
+      const String fullUrl =
           '${ApiConfig.baseUrl}${ApiConfig.googleCallbackEndpoint}';
       _logger.info('Full URL being called: $fullUrl');
 
@@ -148,7 +201,7 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: requestBody,
       )
-          .timeout(Duration(seconds: 30), onTimeout: () {
+          .timeout(const Duration(seconds: 30), onTimeout: () {
         _logger.severe('Request timed out after 30 seconds');
         throw Exception('Connection timeout');
       });

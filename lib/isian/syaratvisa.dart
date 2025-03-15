@@ -8,12 +8,12 @@ class SyaratVisaScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Visa - Malaysia',
           style: TextStyle(fontWeight: FontWeight.bold), // Make the title bold
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
             // Implement back button functionality here
             Navigator.pop(context);
@@ -31,39 +31,39 @@ class SyaratVisaScreen extends StatelessWidget {
                   title: 'Personal Bond',
                   description: 'Personal bond ini sendiri adalah surat tanggungan dengan biaya yang bervariasi.'
               ),
-              SizedBox(height: 16.0),
+              const SizedBox(height: 16.0),
               _buildCard(
                   image: Image.asset('assets/Image/health_checkup.jpg'),
                   title: 'Persiapan Dokumen',
                   description: 'Pemeriksaan kesehatan di Klinik Panel Layanan Global Pendidikan Malaysia Pusat Kesehatan Universitas Negeri yang disetujui.'
               ),
-              SizedBox(height: 16.0),
+              const SizedBox(height: 16.0),
               _buildCard(
                   image: Image.asset('assets/Image/clock.jpg'),
                   title: 'Persyaratan Kesehatan',
                   description: 'Proses pengajuan Surat Persetujuan Visa Pelajar Malaysia hingga menerima Student Pass membutuhkan waktu 4-6 minggu.'
               ),
-              SizedBox(height: 16.0),
+              const SizedBox(height: 16.0),
               _buildCard(
                   image: Image.asset('assets/Image/money.jpg'),
                   title: 'Proses Pengajuan',
                   description: 'Mengurus student pass membutuhkan biaya RM60.00 per tahun.'
               ),
-              SizedBox(height: 32.0),
+              const SizedBox(height: 32.0),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => FormScreen()), // Navigate to FormScreen from form.dart
+                    MaterialPageRoute(builder: (context) => const FormScreen()), // Navigate to FormScreen from form.dart
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF8C52FF),
+                  backgroundColor: const Color(0xFF8C52FF),
                   foregroundColor: Colors.white,
-                  minimumSize: Size.fromHeight(50.0),
-                  textStyle: TextStyle(fontSize: 18),
+                  minimumSize: const Size.fromHeight(50.0),
+                  textStyle: const TextStyle(fontSize: 18),
                 ),
-                child: Text('Apply'),
+                child: const Text('Apply'),
               ),
             ],
           ),
@@ -78,7 +78,7 @@ class SyaratVisaScreen extends StatelessWidget {
     required String description,
   }) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 10),
+      margin: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -89,9 +89,9 @@ class SyaratVisaScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(description, style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 8.0),
-                  Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  Text(description, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(height: 8.0),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 ],
               ),
             ),

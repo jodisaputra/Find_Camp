@@ -29,7 +29,7 @@ class CampusDetailPage extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -43,7 +43,7 @@ class CampusDetailPage extends StatelessWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.vertical(
+                  borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(20),
                   ),
                   child: Image.asset(
@@ -63,7 +63,7 @@ class CampusDetailPage extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -72,26 +72,26 @@ class CampusDetailPage extends StatelessWidget {
                   // University Name
                   Text(
                     name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   // Rating
                   Row(
                     children: [
-                      Icon(Icons.star, color: Colors.amber),
-                      SizedBox(width: 4),
+                      const Icon(Icons.star, color: Colors.amber),
+                      const SizedBox(width: 4),
                       Text(
                         '$rating/5.0',
-                        style: TextStyle(fontSize: 16),
+                        style: const TextStyle(fontSize: 16),
                       ),
                     ],
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   // Description Section
-                  Text(
+                  const Text(
                     'University Description',
                     style: TextStyle(
                       fontSize: 16,
@@ -99,28 +99,28 @@ class CampusDetailPage extends StatelessWidget {
                       color: Colors.blue,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     description,
-                    style: TextStyle(fontSize: 14),
+                    style: const TextStyle(fontSize: 14),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   // Contact Information
-                  ListTile(
+                  const ListTile(
                     leading: Icon(Icons.school, color: Colors.green),
                     title: Text('Major'),
                   ),
                   ListTile(
-                    leading: Icon(Icons.language, color: Colors.blue),
-                    title: Text('Website'),
+                    leading: const Icon(Icons.language, color: Colors.blue),
+                    title: const Text('Website'),
                     onTap: () => _launchURL(website),
                   ),
                   ListTile(
-                    leading: Icon(Icons.phone, color: Colors.orange),
+                    leading: const Icon(Icons.phone, color: Colors.orange),
                     title: Text(phone),
                   ),
                   ListTile(
-                    leading: Icon(Icons.email, color: Colors.red),
+                    leading: const Icon(Icons.email, color: Colors.red),
                     title: Text(email),
                   ),
                 ],

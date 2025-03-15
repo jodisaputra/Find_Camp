@@ -301,16 +301,15 @@ class _MainMenuState extends State<MainMenu> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: FadeInImage.assetNetwork(
-                  placeholder: 'assets/Image/placeholder.png',
-                  image: country.flagUrl,
+                child: Image.network(
+                  country.flagUrl,
                   fit: BoxFit.cover,
-                  imageErrorBuilder: (context, error, stackTrace) {
-                    // Fallback to placeholder if network image fails
-                    return Image.asset(
-                      'assets/Image/placeholder.png',
-                      fit: BoxFit.cover,
-                    );
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.image_not_supported, size: 50);
                   },
                 ),
               ),

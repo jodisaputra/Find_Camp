@@ -30,7 +30,7 @@ class BrandButton extends StatelessWidget {
           ),
           backgroundColor: WidgetStateProperty.all<Color>(backgroundColor),
           side: WidgetStateProperty.all<BorderSide>(
-            BorderSide(color: Colors.black, width: 1),
+            const BorderSide(color: Colors.black, width: 1),
           ),
         ),
         child: Row(

@@ -16,7 +16,7 @@ class _FormScreenState extends State<FormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Form'),
+        title: const Text('Form'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -24,18 +24,18 @@ class _FormScreenState extends State<FormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Form Fams !',
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
 
               // Name Field
-              Text(
+              const Text(
                 'Name',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               TextField(
                 decoration: InputDecoration(
                   filled: true,
@@ -45,17 +45,17 @@ class _FormScreenState extends State<FormScreen> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
                 onChanged: (value) => _name = value,
               ),
-              SizedBox(height: 15),
+              const SizedBox(height: 15),
 
               // Email Field
-              Text(
+              const Text(
                 'Email',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               TextField(
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
@@ -66,24 +66,24 @@ class _FormScreenState extends State<FormScreen> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
                 onChanged: (value) => _email = value,
               ),
-              SizedBox(height: 15),
+              const SizedBox(height: 15),
 
               // Phone Number Field
-              Text(
+              const Text(
                 'Phone No.',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               Row(
                 children: [
                   // Dropdown for Country Code
                   Expanded(
                     flex: 2,
                     child: DropdownButtonFormField<String>(
-                      items: [
+                      items: const [
                         DropdownMenuItem(value: '+1', child: Text('+1')),
                         DropdownMenuItem(value: '+91', child: Text('+91')),
                         DropdownMenuItem(value: '+44', child: Text('+44')),
@@ -102,11 +102,11 @@ class _FormScreenState extends State<FormScreen> {
                           borderSide: BorderSide.none,
                         ),
                       ),
-                      style: TextStyle(fontSize: 16),
+                      style: const TextStyle(fontSize: 16),
                       value: _countryCode,
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
 
                   // Phone Number Input
                   Expanded(
@@ -121,24 +121,24 @@ class _FormScreenState extends State<FormScreen> {
                           borderSide: BorderSide.none,
                         ),
                       ),
-                      style: TextStyle(fontSize: 18),
+                      style: const TextStyle(fontSize: 18),
                       onChanged: (value) => _phoneNumber = value,
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 15),
+              const SizedBox(height: 15),
 
               // Date of Birth Field
-              Text(
+              const Text(
                 'Date of Birth',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               TextField(
                 keyboardType: TextInputType.datetime,
                 decoration: InputDecoration(
-                  suffixIcon: Icon(Icons.calendar_today),
+                  suffixIcon: const Icon(Icons.calendar_today),
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
@@ -146,17 +146,17 @@ class _FormScreenState extends State<FormScreen> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
                 onChanged: (value) => _dob = value,
               ),
-              SizedBox(height: 15),
+              const SizedBox(height: 15),
 
               // Destination Country Field
-              Text(
+              const Text(
                 'Destination Country',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               TextField(
                 decoration: InputDecoration(
                   filled: true,
@@ -166,19 +166,19 @@ class _FormScreenState extends State<FormScreen> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
                 onChanged: (value) => _destinationCountry = value,
               ),
-              SizedBox(height: 15),
+              const SizedBox(height: 15),
 
               // Letter Type Field with Black Text
-              Text(
+              const Text(
                 'Letter Type',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 5),
+              const SizedBox(height: 5),
               DropdownButtonFormField<String>(
-                items: [
+                items: const [
                   DropdownMenuItem(
                     value: 'Visa',
                     child: Text(
@@ -207,26 +207,26 @@ class _FormScreenState extends State<FormScreen> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
                 value: 'Visa',
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
 
               // Submit Button
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => TaskScreen()),
+                    MaterialPageRoute(builder: (context) => const TaskScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF8C52FF),
+                  backgroundColor: const Color(0xFF8C52FF),
                   foregroundColor: Colors.white,
-                  minimumSize: Size.fromHeight(50.0),
-                  textStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  minimumSize: const Size.fromHeight(50.0),
+                  textStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
-                child: Text('Submit'),
+                child: const Text('Submit'),
               ),
             ],
           ),

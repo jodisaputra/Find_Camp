@@ -28,8 +28,8 @@ class TaskScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
             TaskCard(
@@ -39,7 +39,7 @@ class TaskScreen extends StatelessWidget {
               steps: ['Form', 'Upload', 'Payment', 'Verify', 'Approval'],
               completedSteps: 5,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             TaskCard(
               title: 'Passport',
               progress: 40,
@@ -47,7 +47,7 @@ class TaskScreen extends StatelessWidget {
               steps: ['Form', 'Upload', 'Payment', 'Appointment', 'Approval'],
               completedSteps: 2,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             TaskCard(
               title: 'Recommendation Letter',
               progress: 40,
@@ -55,7 +55,7 @@ class TaskScreen extends StatelessWidget {
               steps: ['Form', 'Upload', 'Payment', 'Appointment', 'Approval'],
               completedSteps: 2,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             TaskCard(
               title: 'Motivation Letter',
               progress: 40,
@@ -63,7 +63,7 @@ class TaskScreen extends StatelessWidget {
               steps: ['Form', 'Upload', 'Payment', 'Appointment', 'Approval'],
               completedSteps: 2,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             TaskCard(
               title: 'TOEFL',
               progress: 40,
@@ -297,7 +297,7 @@ class _TaskCardState extends State<TaskCard> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => FormScreen(),
+                                  builder: (context) => const FormScreen(),
                                 ),
                               );
                             },
@@ -311,7 +311,7 @@ class _TaskCardState extends State<TaskCard> {
             if (_uploadedFileUrl != null)
               Text(
                 'File uploaded successfully: $_uploadedFileUrl',
-                style: TextStyle(color: Colors.green),
+                style: const TextStyle(color: Colors.green),
               ),
           ],
         ),

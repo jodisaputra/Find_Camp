@@ -64,14 +64,14 @@ class _CountryScreenState extends State<CountryScreen> {
                       SizedBox(
                         height: 200,
                         width: double.infinity,
-                        child: FadeInImage.assetNetwork(
-                          placeholder: 'assets/Image/placeholder.png',
-                          image: widget.flagAsset,
+                        child: Image.network(
+                          widget.flagAsset,
                           fit: BoxFit.cover,
-                          imageErrorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/Image/placeholder.png',
-                              fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image,
+                                  size: 50, color: Colors.grey),
                             );
                           },
                         ),

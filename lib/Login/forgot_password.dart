@@ -17,13 +17,13 @@ class ForgetPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            const Text(
               'Forgot Your Password?',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Corrected here
               textAlign: TextAlign.start,
             ),
             const SizedBox(height: 10), // Added a spacer for better readability
-            Text(
+            const Text(
               'Enter the registered email to receive help to reset your password.',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.normal),
               textAlign: TextAlign.start,

@@ -7,7 +7,7 @@ class ApiService {
   // Get all regions
   Future<List<Map<String, dynamic>>> getRegions() async {
     final response = await http.get(
-      Uri.parse('${ApiConfig.regionsEndpoint}'),
+      Uri.parse(ApiConfig.regionsEndpoint),
       headers: {'Accept': 'application/json'},
     );
     
@@ -21,7 +21,7 @@ class ApiService {
   
   // Get countries, optionally filtered by region or search term
   Future<List<Map<String, dynamic>>> getCountries({String? search, int? regionId}) async {
-    String url = '${ApiConfig.countriesEndpoint}';
+    String url = ApiConfig.countriesEndpoint;
     
     // Add query parameters if provided
     if (search != null || regionId != null) {

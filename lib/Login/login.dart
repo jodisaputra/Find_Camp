@@ -174,9 +174,9 @@ class _LoginPageState extends State<LoginPage> {
                     },
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : Row(
+                  : const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Icon(Icons.login, color: Colors.white),
                         SizedBox(width: 15),
                         Text("Login", style: TextStyle(color: Colors.white)),
@@ -203,7 +203,26 @@ class _LoginPageState extends State<LoginPage> {
               height: 48,
             ),
 
-            const SizedBox(height: 100),
+            const SizedBox(height: 30),
+
+            // Register Account Link - Added this section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("Don't have an account?"),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/register');
+                  },
+                  child: const Text(
+                    "Register here",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 40),
 
             const Text(
               "By registering, you agree to the Terms of Service, "

@@ -14,34 +14,34 @@ class SettingsPage extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: [
-          const Text('Account', style: TextStyle(fontWeight: FontWeight.bold)),
-          const ListTile(
+        children: const [
+          Text('Account', style: TextStyle(fontWeight: FontWeight.bold)),
+          ListTile(
             leading: Icon(Icons.security),
             title: Text('Security'),
           ),
-          const ListTile(
+          ListTile(
             leading: Icon(Icons.lock),
             title: Text('Privacy'),
           ),
-          const SizedBox(height: 10),
-          const Text('Support & About',
+          SizedBox(height: 10),
+          Text('Support & About',
               style: TextStyle(fontWeight: FontWeight.bold)),
-          const ListTile(
+          ListTile(
             leading: Icon(Icons.help_outline),
             title: Text('Help & Support'),
           ),
-          const ListTile(
+          ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('Terms and Policies'),
           ),
-          const SizedBox(height: 10),
-          const Text('Actions', style: TextStyle(fontWeight: FontWeight.bold)),
-          const ListTile(
+          SizedBox(height: 10),
+          Text('Actions', style: TextStyle(fontWeight: FontWeight.bold)),
+          ListTile(
             leading: Icon(Icons.flag_outlined),
             title: Text('Report a problem'),
           ),
-          const ListTile(
+          ListTile(
             leading: Icon(Icons.logout),
             title: Text('Log out'),
           ),

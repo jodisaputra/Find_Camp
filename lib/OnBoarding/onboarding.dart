@@ -15,17 +15,17 @@ class _OnBoardingState extends State<OnBoarding> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    OnBoardingContent(
+    const OnBoardingContent(
       title: "100+ Universities Around the World",
       description: "With over 100 universities listed globally, FindCamp provides a wide range of options.",
       imagePath: "assets/Image/onboarding1.png",
     ),
-    OnBoardingContent(
+    const OnBoardingContent(
       title: "Up-to-Date Information",
       description: "Access the latest information on university programs, admissions, and scholarships.",
       imagePath: "assets/Image/onboarding2.png",
     ),
-    OnBoardingContent(
+    const OnBoardingContent(
       title: "Expert Consultation",
       description: "Get guidance on applications, visas, and other steps for studying abroad.",
       imagePath: "assets/Image/onboarding3.png",

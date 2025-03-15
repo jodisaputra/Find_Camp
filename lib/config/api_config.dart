@@ -7,8 +7,8 @@ class ApiConfig {
   static const String googleAuthEndpoint = "/api/auth/google/redirect";
   static const String googleCallbackEndpoint = "/api/auth/google/token";
 
-  static const String regionsEndpoint = '${baseUrl}/api/regions';
-  static const String countriesEndpoint = '${baseUrl}/api/countries';
+  static const String regionsEndpoint = '$baseUrl/api/regions';
+  static const String countriesEndpoint = '$baseUrl/api/countries';
   // Default headers
   static Map<String, String> getHeaders({String? token}) {
     Map<String, String> headers = {

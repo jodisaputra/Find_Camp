@@ -10,16 +10,16 @@ class ProfileGreeting extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        CircleAvatar(
+        const CircleAvatar(
           radius: 30,
           backgroundImage: AssetImage(
               'assets/profile_image.png'), // Replace with actual image asset
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Hallo Fams!', style: Styles.subtitleStyle),
+            const Text('Hallo Fams!', style: Styles.subtitleStyle),
             Text(
               userName,
               style: Styles.headingStyle,

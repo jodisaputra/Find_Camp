@@ -63,23 +63,23 @@ class MyApp extends StatelessWidget {
               ),
             );
           case Routes.consult:
-            return MaterialPageRoute(builder: (context) => ConsultPage());
+            return MaterialPageRoute(builder: (context) => const ConsultPage());
           case Routes.login:
             return MaterialPageRoute(builder: (context) => const LoginPage());
           case Routes.forgotPassword:
-            return MaterialPageRoute(builder: (context) => ForgetPage());
+            return MaterialPageRoute(builder: (context) => const ForgetPage());
           case Routes.register:
-            return MaterialPageRoute(builder: (context) => RegisterPage());
+            return MaterialPageRoute(builder: (context) => const RegisterPage());
           case Routes.editProfile:
-            return MaterialPageRoute(builder: (context) => EditProfilePage());
+            return MaterialPageRoute(builder: (context) => const EditProfilePage());
           case Routes.settings:
-            return MaterialPageRoute(builder: (context) => SettingsPage());
+            return MaterialPageRoute(builder: (context) => const SettingsPage());
           case Routes.task:
-            return MaterialPageRoute(builder: (context) => TaskScreen());
+            return MaterialPageRoute(builder: (context) => const TaskScreen());
           case Routes.OTP:
-            return MaterialPageRoute(builder: (context) => OTPPage());
+            return MaterialPageRoute(builder: (context) => const OTPPage());
           case Routes.Form:
-            return MaterialPageRoute(builder: (context) => FormScreen());
+            return MaterialPageRoute(builder: (context) => const FormScreen());
           default:
             return MaterialPageRoute(
               builder: (context) => ErrorPage(message: 'Route not found: ${settings.name}'),

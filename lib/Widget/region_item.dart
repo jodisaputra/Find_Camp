@@ -18,7 +18,7 @@ class RegionItem extends StatelessWidget {
             backgroundColor: Colors.grey[200],
             child: Icon(icon, color: Colors.purple),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(region, style: Styles.regionTextStyle),
         ],
       ),

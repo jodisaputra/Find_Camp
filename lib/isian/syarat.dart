@@ -19,12 +19,12 @@ class _SyaratScreenState extends State<SyaratScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
             Navigator.pop(context); // Go back to the previous screen
           },
         ),
-        title: Row(
+        title: const Row(
           children: [
             Text(
               'Syarat',
@@ -112,7 +112,7 @@ class _SyaratScreenState extends State<SyaratScreen> {
                 // Title
                 Text(
                   title,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
 
                 // Custom Gray Square Checkbox
@@ -155,9 +155,9 @@ class _SyaratScreenState extends State<SyaratScreen> {
                 // Duration
                 Row(
                   children: [
-                    Icon(Icons.access_time_rounded, size: 16, color: Colors.grey),
+                    const Icon(Icons.access_time_rounded, size: 16, color: Colors.grey),
                     const SizedBox(width: 4),
-                    Text(duration, style: TextStyle(color: Colors.grey)),
+                    Text(duration, style: const TextStyle(color: Colors.grey)),
                   ],
                 ),
 
@@ -167,7 +167,7 @@ class _SyaratScreenState extends State<SyaratScreen> {
                     if (title == 'Visa') {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => SyaratVisaScreen()), // Navigate to SyaratVisaScreen
+                        MaterialPageRoute(builder: (context) => const SyaratVisaScreen()), // Navigate to SyaratVisaScreen
                       );
                     }
                   },
@@ -178,7 +178,7 @@ class _SyaratScreenState extends State<SyaratScreen> {
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
-                  child: Text(
+                  child: const Text(
                     'How to Apply?',
                     style: TextStyle(color: Colors.white),
                   ),
