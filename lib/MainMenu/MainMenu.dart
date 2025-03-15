@@ -4,6 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:find_camp/Widget/navbar.dart';
 import 'package:find_camp/isian/country.dart';
 import 'package:find_camp/services/api_service.dart';
+import 'package:find_camp/services/auth_service.dart';
+import 'package:find_camp/config/api_config.dart';
+import '../models/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class MainMenu extends StatefulWidget {
   final String username;
@@ -17,6 +22,7 @@ class MainMenu extends StatefulWidget {
 class _MainMenuState extends State<MainMenu> {
   final TextEditingController _searchController = TextEditingController();
   final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
 
   String _searchText = '';
   String _selectedRegion = '';
@@ -28,18 +34,69 @@ class _MainMenuState extends State<MainMenu> {
 
   bool _isLoading = true;
   String? _errorMessage;
+  User? _currentUser;
+  int _imageTimestamp = DateTime.now().millisecondsSinceEpoch;
+  bool _userLoading = true;
 
   @override
   void initState() {
     super.initState();
+    print('MainMenu initState called');
     _loadData();
-
+    _loadUserProfileDirect(); // Use direct loading instead
+    
     _searchController.addListener(() {
       setState(() {
         _searchText = _searchController.text;
         _filterCountries();
       });
     });
+  }
+
+  // Direct method to load user data from SharedPreferences
+  Future<void> _loadUserProfileDirect() async {
+    setState(() {
+      _userLoading = true;
+    });
+    
+    try {
+      print('Loading user profile directly from SharedPreferences');
+      
+      // Get user data from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      final userData = prefs.getString('user');
+      
+      if (userData != null) {
+        print('Found user data in SharedPreferences: ${userData.substring(0, 50)}...');
+        final userMap = jsonDecode(userData);
+        final user = User.fromJson(userMap);
+        
+        print('Username: ${user.name}');
+        print('Profile image path: ${user.profileImagePath}');
+        
+        if (mounted) {
+          setState(() {
+            _currentUser = user;
+            _imageTimestamp = DateTime.now().millisecondsSinceEpoch;
+            _userLoading = false;
+          });
+        }
+      } else {
+        print('No user data found in SharedPreferences');
+        if (mounted) {
+          setState(() {
+            _userLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user profile directly: $e');
+      if (mounted) {
+        setState(() {
+          _userLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadData() async {
@@ -123,6 +180,78 @@ class _MainMenuState extends State<MainMenu> {
     });
   }
 
+  // Get image URL with cache busting
+  String _getProfileImageUrl() {
+    if (_currentUser?.profileImagePath == null || _currentUser!.profileImagePath!.isEmpty) {
+      return '';
+    }
+
+    print('Building profile image URL from: ${_currentUser!.profileImagePath}');
+    
+    // Check if the URL already has a domain
+    if (!_currentUser!.profileImagePath!.startsWith('http')) {
+      // Add your API base URL if it's a relative path
+      final url = '${ApiConfig.baseUrl}${_currentUser!.profileImagePath}?t=$_imageTimestamp';
+      print('Generated image URL: $url');
+      return url;
+    }
+
+    // If it already has a domain, just add the timestamp
+    final url = '${_currentUser!.profileImagePath}?t=$_imageTimestamp';
+    print('Generated image URL: $url');
+    return url;
+  }
+
+  Widget _buildProfileImage() {
+    print('Building profile image widget');
+    print('Current user: ${_currentUser?.name}');
+    print('Profile path: ${_currentUser?.profileImagePath}');
+    
+    if (_userLoading) {
+      return const CircleAvatar(
+        radius: 30,
+        backgroundColor: Colors.grey,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: Colors.white,
+        ),
+      );
+    }
+    
+    if (_currentUser?.profileImagePath != null && _currentUser!.profileImagePath!.isNotEmpty) {
+      final imageUrl = _getProfileImageUrl();
+      print('Using profile image: $imageUrl');
+      
+      return CircleAvatar(
+        radius: 30,
+        backgroundColor: Colors.grey[200],
+        child: ClipOval(
+          child: Image.network(
+            imageUrl,
+            width: 60,
+            height: 60,
+            fit: BoxFit.cover,
+            // Add cache busting at network image level too
+            headers: {'cache-control': 'no-cache'},
+            errorBuilder: (context, error, stackTrace) {
+              print('Error loading profile image: $error');
+              return const CircleAvatar(
+                radius: 30,
+                backgroundImage: AssetImage('assets/Image/profile_image.png'),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      print('Using default profile image');
+      return const CircleAvatar(
+        radius: 30,
+        backgroundImage: AssetImage('assets/Image/profile_image.png'),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -138,22 +267,28 @@ class _MainMenuState extends State<MainMenu> {
               ? Center(
                   child: Text(_errorMessage!,
                       style: const TextStyle(color: Colors.red)))
-              : Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 25),
-                      _buildGreeting(),
-                      const SizedBox(height: 20),
-                      _buildSearchBar(),
-                      const SizedBox(height: 20),
-                      if (_searchText.isEmpty) ...[
-                        _buildRegionsRow(),
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    await _loadUserProfileDirect();
+                    await _loadData();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 25),
+                        _buildGreeting(),
                         const SizedBox(height: 20),
+                        _buildSearchBar(),
+                        const SizedBox(height: 20),
+                        if (_searchText.isEmpty) ...[
+                          _buildRegionsRow(),
+                          const SizedBox(height: 20),
+                        ],
+                        _buildCountryGrid(),
                       ],
-                      _buildCountryGrid(),
-                    ],
+                    ),
                   ),
                 ),
       bottomNavigationBar: CustomBottomNavigationBar(
@@ -161,7 +296,7 @@ class _MainMenuState extends State<MainMenu> {
         onTap: (index) {
           switch (index) {
             case 0:
-              Navigator.pushNamed(context, '/mainmenu');
+              // Already on main menu
               break;
             case 1:
               Navigator.pushNamed(context, '/task');
@@ -170,7 +305,11 @@ class _MainMenuState extends State<MainMenu> {
               Navigator.pushNamed(context, '/consult');
               break;
             case 3:
-              Navigator.pushNamed(context, '/profile');
+              Navigator.pushNamed(context, '/profile')
+                .then((_) {
+                  // Reload user data when returning from profile
+                  _loadUserProfileDirect();
+                });
               break;
           }
         },
@@ -181,10 +320,7 @@ class _MainMenuState extends State<MainMenu> {
   Widget _buildGreeting() {
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 30,
-          backgroundImage: AssetImage('assets/Image/profile_image.png'),
-        ),
+        _buildProfileImage(),
         const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,7 +328,7 @@ class _MainMenuState extends State<MainMenu> {
             const Text('Hello Fams!',
                 style: TextStyle(fontSize: 14, color: Colors.grey)),
             Text(
-              widget.username,
+              _currentUser?.name ?? widget.username,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
