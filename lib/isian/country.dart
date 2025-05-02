@@ -1,6 +1,8 @@
 import 'package:find_camp/models/country_model.dart';
 import 'package:flutter/material.dart';
 import 'package:find_camp/services/api_service.dart';
+import 'package:find_camp/isian/syarat.dart';
+import 'package:find_camp/isian/campus_list_page.dart';
 
 class CountryScreen extends StatefulWidget {
   final int countryId;
@@ -148,19 +150,64 @@ class _CountryScreenState extends State<CountryScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
+                            // First button (Apply) from old code
                             ElevatedButton(
                               onPressed: () {
-                                // Navigate to booking or planning screen
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Feature coming soon!'),
-                                  ),
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => SyaratScreen()),
                                 );
                               },
                               style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8C50FF),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                                 minimumSize: const Size(double.infinity, 50),
                               ),
-                              child: const Text('Book Now'),
+                              child: const Text(
+                                'Apply',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 15),
+                            // Second button (View Campus) from old code
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CampusListPage(countryName: widget.name),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.location_pin,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              label: const Text(
+                                'View Campus',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8C50FF),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                minimumSize: const Size(double.infinity, 50),
+                                elevation: 3,
+                              ),
                             ),
                           ],
                         ),

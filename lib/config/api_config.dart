@@ -1,7 +1,7 @@
 class ApiConfig {
   // Base URL for all API requests (change this for different environments)
-  static const String baseUrl = "https://findcamp.my-saragih.com";
-  
+  static const String baseUrl = "https://findcamp.saragih.com";
+
   // API Endpoints
   static const String loginEndpoint = "/api/login";
   static const String googleAuthEndpoint = "/api/auth/google/redirect";
@@ -15,11 +15,11 @@ class ApiConfig {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    
+
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     }
-    
+
     return headers;
   }
 }

@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Izin akses internet -->
     <uses-permission android:name="android.permission.INTERNET" />
-
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <queries>
         <!-- Mendukung skema URL wa.me -->
         <intent>
@@ -16,6 +16,7 @@
     </queries>
 
     <application
+        android:networkSecurityConfig="@xml/network_security_config"
         android:label="findcamp"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher">
