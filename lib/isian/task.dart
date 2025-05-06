@@ -297,7 +297,11 @@ class _TaskCardState extends State<TaskCard> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const FormScreen(),
+                                  builder: (context) => FormScreen(
+                                    countryId: 1,
+                                    requirementId: 2,
+                                    requirementName: 'Visa',
+                                  ),
                                 ),
                               );
                             },

@@ -54,7 +54,13 @@ class SyaratVisaScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const FormScreen()), // Navigate to FormScreen from form.dart
+                    MaterialPageRoute(
+                      builder: (context) => FormScreen(
+                        countryId: 2, // e.g. Malaysia's ID
+                        requirementId: 1, // e.g. Visa requirement ID
+                        requirementName: 'Visa',
+                      ),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(

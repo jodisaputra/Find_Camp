@@ -1,237 +1,186 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:find_camp/isian/task.dart'; // Import the TaskScreen
+import 'package:file_picker/file_picker.dart';
+import '../Services/requirement_service.dart';
+import '../models/requirement_upload_model.dart';
+import '../Services/auth_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class FormScreen extends StatefulWidget {
-  const FormScreen({super.key});
+  final int countryId;
+  final int requirementId;
+  final String requirementName;
+  const FormScreen({super.key, required this.countryId, required this.requirementId, required this.requirementName});
 
   @override
   _FormScreenState createState() => _FormScreenState();
 }
 
 class _FormScreenState extends State<FormScreen> {
-  String? _name, _email, _phoneNumber, _dob, _destinationCountry, _letterType;
-  String? _countryCode = '+62'; // Default country code
+  final RequirementService _service = RequirementService();
+  RequirementUpload? _upload;
+  bool _loading = true;
+  bool _uploading = false;
+  String? _error;
+  File? _selectedFile;
+  String? _token;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUpload();
+  }
+
+  Future<void> _loadUpload() async {
+    setState(() { _loading = true; _error = null; });
+    _token = await _getToken();
+    try {
+      final upload = await _service.getUserRequirementUpload(
+        countryId: widget.countryId,
+        requirementId: widget.requirementId,
+        token: _token!,
+      );
+      setState(() { _upload = upload; _loading = false; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'doc', 'docx']);
+    if (result != null && result.files.single.path != null) {
+      setState(() { _selectedFile = File(result.files.single.path!); });
+    }
+  }
+
+  Future<void> _uploadFile() async {
+    if (_selectedFile == null) return;
+    setState(() { _uploading = true; _error = null; });
+    try {
+      final upload = await _service.uploadRequirementFile(
+        countryId: widget.countryId,
+        requirementId: widget.requirementId,
+        file: _selectedFile!,
+        token: _token!,
+      );
+      setState(() { _upload = upload; _uploading = false; _selectedFile = null; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _uploading = false; });
+    }
+  }
+
+  Future<String> _getToken() async {
+    final token = await AuthService().getToken();
+    return token ?? '';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Form'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(title: Text(widget.requirementName)),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: _buildContent(),
+            ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_error != null) {
+      return Center(child: Text(_error!, style: const TextStyle(color: Colors.red)));
+    }
+    if (_upload == null || _upload!.status == 'refused') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.requirementName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          if (_upload?.status == 'refused') ...[
+            const SizedBox(height: 10),
+            Text('Status: Refused', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            if (_upload?.adminNote != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text('Admin Note: ${_upload!.adminNote}', style: const TextStyle(color: Colors.red)),
+              ),
+          ],
+          const SizedBox(height: 20),
+          Text('Upload your file (PDF, DOC, DOCX):', style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 10),
+          Row(
             children: [
-              const Text(
-                'Form Fams !',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              ElevatedButton.icon(
+                onPressed: _uploading ? null : _pickFile,
+                icon: const Icon(Icons.attach_file),
+                label: const Text('Choose File'),
               ),
-              const SizedBox(height: 30),
-
-              // Name Field
-              const Text(
-                'Name',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              TextField(
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                style: const TextStyle(fontSize: 18),
-                onChanged: (value) => _name = value,
-              ),
-              const SizedBox(height: 15),
-
-              // Email Field
-              const Text(
-                'Email',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              TextField(
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                style: const TextStyle(fontSize: 18),
-                onChanged: (value) => _email = value,
-              ),
-              const SizedBox(height: 15),
-
-              // Phone Number Field
-              const Text(
-                'Phone No.',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              Row(
-                children: [
-                  // Dropdown for Country Code
-                  Expanded(
-                    flex: 2,
-                    child: DropdownButtonFormField<String>(
-                      items: const [
-                        DropdownMenuItem(value: '+1', child: Text('+1')),
-                        DropdownMenuItem(value: '+91', child: Text('+91')),
-                        DropdownMenuItem(value: '+44', child: Text('+44')),
-                        DropdownMenuItem(value: '+62', child: Text('+62')),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _countryCode = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      style: const TextStyle(fontSize: 16),
-                      value: _countryCode,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-
-                  // Phone Number Input
-                  Expanded(
-                    flex: 5,
-                    child: TextField(
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      style: const TextStyle(fontSize: 18),
-                      onChanged: (value) => _phoneNumber = value,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 15),
-
-              // Date of Birth Field
-              const Text(
-                'Date of Birth',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              TextField(
-                keyboardType: TextInputType.datetime,
-                decoration: InputDecoration(
-                  suffixIcon: const Icon(Icons.calendar_today),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                style: const TextStyle(fontSize: 18),
-                onChanged: (value) => _dob = value,
-              ),
-              const SizedBox(height: 15),
-
-              // Destination Country Field
-              const Text(
-                'Destination Country',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              TextField(
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                style: const TextStyle(fontSize: 18),
-                onChanged: (value) => _destinationCountry = value,
-              ),
-              const SizedBox(height: 15),
-
-              // Letter Type Field with Black Text
-              const Text(
-                'Letter Type',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              DropdownButtonFormField<String>(
-                items: const [
-                  DropdownMenuItem(
-                    value: 'Visa',
-                    child: Text(
-                      'Visa',
-                      style: TextStyle(color: Colors.black), // Set black color for the text
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Others',
-                    child: Text(
-                      'Others',
-                      style: TextStyle(color: Colors.black), // Set black color for the text
-                    ),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _letterType = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                style: const TextStyle(fontSize: 18),
-                value: 'Visa',
-              ),
-              const SizedBox(height: 30),
-
-              // Submit Button
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const TaskScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8C52FF),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(50.0),
-                  textStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                child: const Text('Submit'),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(_selectedFile?.path.split('/').last ?? 'No file selected'),
               ),
             ],
           ),
-        ),
-      ),
-    );
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: (_selectedFile != null && !_uploading) ? _uploadFile : null,
+              child: _uploading ? const CircularProgressIndicator() : const Text('Upload'),
+            ),
+          ),
+        ],
+      );
+    } else {
+      // Show file preview and status
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.requirementName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Text('Status: ${_upload!.status[0].toUpperCase()}${_upload!.status.substring(1)}',
+              style: TextStyle(
+                color: _upload!.status == 'accepted' ? Colors.green : Colors.orange,
+                fontWeight: FontWeight.bold,
+              )),
+          if (_upload!.adminNote != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text('Admin Note: ${_upload!.adminNote}', style: const TextStyle(color: Colors.red)),
+            ),
+          const SizedBox(height: 20),
+          Text('Your uploaded file:', style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 10),
+          InkWell(
+            onTap: () async {
+              final url = _service.getFileUrl(_upload!.id);
+              if (await canLaunch(url)) {
+                await launch(url);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not open file.')),
+                );
+              }
+            },
+            child: Row(
+              children: [
+                const Icon(Icons.insert_drive_file, color: Colors.blue),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_upload!.filePath.split('/').last)),
+                const Icon(Icons.open_in_new, size: 16),
+              ],
+            ),
+          ),
+          if (_upload!.status == 'refused')
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: ElevatedButton(
+                onPressed: _pickFile,
+                child: const Text('Re-upload'),
+              ),
+            ),
+        ],
+      );
+    }
   }
 }

@@ -12,6 +12,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:find_camp/Profile/edit_profile.dart';
 import 'package:find_camp/Profile/setting.dart';
 import 'package:find_camp/isian/form.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:find_camp/Services/auth_service.dart';
+
 // Constants for route names
 class Routes {
   static const String splashScreen = '/';
@@ -78,7 +81,13 @@ class MyApp extends StatelessWidget {
           case Routes.OTP:
             return MaterialPageRoute(builder: (context) => const OTPPage());
           case Routes.Form:
-            return MaterialPageRoute(builder: (context) => const FormScreen());
+            return MaterialPageRoute(
+              builder: (context) => FormScreen(
+                countryId: 1,
+                requirementId: 1,
+                requirementName: 'Visa',
+              ),
+            );
           default:
             return MaterialPageRoute(
               builder: (context) => ErrorPage(message: 'Route not found: ${settings.name}'),
@@ -104,4 +113,14 @@ class ErrorPage extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<String?> getToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('token');
+}
+
+Future<String> _getToken() async {
+  final token = await AuthService().getToken();
+  return token ?? '';
 }

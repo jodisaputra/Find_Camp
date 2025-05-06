@@ -9,6 +9,7 @@ class ApiConfig {
 
   static const String regionsEndpoint = '$baseUrl/api/regions';
   static const String countriesEndpoint = '$baseUrl/api/countries';
+  static const String requirementsEndpoint = '$baseUrl/api/requirements';
   // Default headers
   static Map<String, String> getHeaders({String? token}) {
     Map<String, String> headers = {
