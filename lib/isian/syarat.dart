@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:find_camp/isian/syaratvisa.dart'; // Import the SyaratVisaScreen class
-import 'package:find_camp/Widget/navbar.dart';
 class SyaratScreen extends StatefulWidget {
   const SyaratScreen({super.key});
 

@@ -155,7 +155,7 @@ class _CountryScreenState extends State<CountryScreen> {
                               onPressed: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => SyaratScreen()),
+                                  MaterialPageRoute(builder: (context) => const SyaratScreen()),
                                 );
                               },
                               style: ElevatedButton.styleFrom(

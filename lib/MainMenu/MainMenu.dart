@@ -232,7 +232,7 @@ class _MainMenuState extends State<MainMenu> {
             height: 60,
             fit: BoxFit.cover,
             // Add cache busting at network image level too
-            headers: {'cache-control': 'no-cache'},
+            headers: const {'cache-control': 'no-cache'},
             errorBuilder: (context, error, stackTrace) {
               print('Error loading profile image: $error');
               return const CircleAvatar(

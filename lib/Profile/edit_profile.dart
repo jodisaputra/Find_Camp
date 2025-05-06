@@ -234,7 +234,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     // Check if the URL already has a domain
     if (!_currentProfileImagePath!.startsWith('http')) {
       // Add your API base URL if it's a relative path
-      return '${ApiConfig.baseUrl}${_currentProfileImagePath}?t=$_imageTimestamp';
+      return '${ApiConfig.baseUrl}$_currentProfileImagePath?t=$_imageTimestamp';
     }
 
     // If it already has a domain, just add the timestamp
@@ -335,8 +335,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                   ),
                   if (_imageError) 
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8.0),
                       child: Text(
                         'Please select a valid image file (JPEG, PNG, under 2MB)',
                         style: TextStyle(color: Colors.red, fontSize: 12),
