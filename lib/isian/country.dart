@@ -187,7 +187,7 @@ class _CountryScreenState extends State<CountryScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => CampusListPage(countryName: widget.name),
+                                    builder: (context) => CampusListPage(countryId: widget.countryId.toString(), countryName: widget.name),
                                   ),
                                 );
                               },

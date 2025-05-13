@@ -5,6 +5,10 @@ import '../Services/requirement_service.dart';
 import '../models/requirement_upload_model.dart';
 import '../Services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 
 class FormScreen extends StatefulWidget {
   final int countryId;
@@ -35,21 +39,49 @@ class _FormScreenState extends State<FormScreen> {
     setState(() { _loading = true; _error = null; });
     _token = await _getToken();
     try {
+      print('Fetching upload for countryId: \\${widget.countryId}, requirementId: \\${widget.requirementId}');
       final upload = await _service.getUserRequirementUpload(
         countryId: widget.countryId,
         requirementId: widget.requirementId,
         token: _token!,
       );
+      print('Fetched upload: \\$upload');
       setState(() { _upload = upload; _loading = false; });
     } catch (e) {
+      print('Error fetching upload: \\$e');
       setState(() { _error = e.toString(); _loading = false; });
     }
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'doc', 'docx']);
-    if (result != null && result.files.single.path != null) {
-      setState(() { _selectedFile = File(result.files.single.path!); });
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: false,
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+        withData: true,
+      );
+      
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        if (file.path != null) {
+          setState(() { 
+            _selectedFile = File(file.path!);
+            _error = null;
+          });
+        } else {
+          setState(() { 
+            _error = 'Could not access the selected file';
+            _selectedFile = null;
+          });
+        }
+      }
+    } catch (e) {
+      print('File picker error: $e');
+      setState(() { 
+        _error = 'Error picking file: ${e.toString()}';
+        _selectedFile = null;
+      });
     }
   }
 
@@ -57,13 +89,15 @@ class _FormScreenState extends State<FormScreen> {
     if (_selectedFile == null) return;
     setState(() { _uploading = true; _error = null; });
     try {
-      final upload = await _service.uploadRequirementFile(
+      await _service.uploadRequirementFile(
         countryId: widget.countryId,
         requirementId: widget.requirementId,
         file: _selectedFile!,
         token: _token!,
       );
-      setState(() { _upload = upload; _uploading = false; _selectedFile = null; });
+      // After upload, reload the upload data from backend
+      await _loadUpload();
+      setState(() { _uploading = false; _selectedFile = null; });
     } catch (e) {
       setState(() { _error = e.toString(); _uploading = false; });
     }
@@ -71,6 +105,17 @@ class _FormScreenState extends State<FormScreen> {
 
   Future<String> _getToken() async {
     final token = await AuthService().getToken();
+    print('Current user token: $token');
+    // Optionally, fetch user info from your backend and print it
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/user'),
+        headers: ApiConfig.getHeaders(token: token),
+      );
+      print('User info response: \\${response.body}');
+    } catch (e) {
+      print('Error fetching user info: \\${e.toString()}');
+    }
     return token ?? '';
   }
 
@@ -91,96 +136,167 @@ class _FormScreenState extends State<FormScreen> {
     if (_error != null) {
       return Center(child: Text(_error!, style: const TextStyle(color: Colors.red)));
     }
+    // Show upload form if no upload yet or status is refused
     if (_upload == null || _upload!.status == 'refused') {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(widget.requirementName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          if (_upload?.status == 'refused') ...[
-            const SizedBox(height: 10),
-            Text('Status: Refused', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-            if (_upload?.adminNote != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text('Admin Note: ${_upload!.adminNote}', style: const TextStyle(color: Colors.red)),
-              ),
-          ],
-          const SizedBox(height: 20),
-          Text('Upload your file (PDF, DOC, DOCX):', style: const TextStyle(fontSize: 16)),
+      return _buildUploadForm(rejected: _upload?.status == 'refused');
+    }
+    // Show uploaded file if status is pending or accepted
+    return _buildUploadedFile();
+  }
+
+  Widget _buildUploadForm({bool rejected = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(widget.requirementName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        if (rejected) ...[
           const SizedBox(height: 10),
-          Row(
-            children: [
-              ElevatedButton.icon(
-                onPressed: _uploading ? null : _pickFile,
-                icon: const Icon(Icons.attach_file),
-                label: const Text('Choose File'),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(_selectedFile?.path.split('/').last ?? 'No file selected'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: (_selectedFile != null && !_uploading) ? _uploadFile : null,
-              child: _uploading ? const CircularProgressIndicator() : const Text('Upload'),
-            ),
-          ),
-        ],
-      );
-    } else {
-      // Show file preview and status
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(widget.requirementName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          Text('Status: ${_upload!.status[0].toUpperCase()}${_upload!.status.substring(1)}',
-              style: TextStyle(
-                color: _upload!.status == 'accepted' ? Colors.green : Colors.orange,
-                fontWeight: FontWeight.bold,
-              )),
-          if (_upload!.adminNote != null)
+          const Text('Status: Refused', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          if (_upload?.adminNote != null)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Text('Admin Note: ${_upload!.adminNote}', style: const TextStyle(color: Colors.red)),
             ),
-          const SizedBox(height: 20),
-          Text('Your uploaded file:', style: const TextStyle(fontSize: 16)),
-          const SizedBox(height: 10),
-          InkWell(
-            onTap: () async {
-              final url = _service.getFileUrl(_upload!.id);
-              if (await canLaunch(url)) {
-                await launch(url);
+        ],
+        const SizedBox(height: 20),
+        const Text('Upload your file:', style: TextStyle(fontSize: 16)),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: _uploading ? null : _pickFile,
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Choose File'),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(_selectedFile?.path.split('/').last ?? 'No file selected'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: (_selectedFile != null && !_uploading) ? _uploadFile : null,
+            child: _uploading ? const CircularProgressIndicator() : const Text('Upload'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUploadedFile() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(widget.requirementName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        Text('Status: 	${_upload!.status[0].toUpperCase()}${_upload!.status.substring(1)}',
+            style: TextStyle(
+              color: _upload!.status == 'accepted' ? Colors.green : Colors.orange,
+              fontWeight: FontWeight.bold,
+            )),
+        if (_upload!.adminNote != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text('Admin Note: ${_upload!.adminNote}', style: const TextStyle(color: Colors.red)),
+          ),
+        const SizedBox(height: 20),
+        const Text('Your uploaded file:', style: TextStyle(fontSize: 16)),
+        const SizedBox(height: 10),
+        InkWell(
+          onTap: () async {
+            try {
+              print('Starting file download process...');
+              print('Upload ID: ${_upload!.id}');
+              print('File path: ${_upload!.filePath}');
+              
+              final url = await _service.getFileUrlWithToken(_upload!.id);
+              print('Generated file URL: $url');
+              
+              final token = await AuthService().getToken();
+              print('Using token: ${token?.substring(0, 20) ?? 'null'}...');
+              
+              final headers = {
+                'Authorization': 'Bearer $token',
+                'Accept': '*/*',
+                'Content-Type': 'application/json',
+              };
+              print('Request headers: $headers');
+              
+              print('Making HTTP request to download file...');
+              final response = await http.get(
+                Uri.parse(url),
+                headers: headers,
+              );
+              print('Response status code: ${response.statusCode}');
+              print('Response headers: ${response.headers}');
+              
+              if (response.statusCode == 200) {
+                print('File download successful, creating temporary file...');
+                // Get the temporary directory
+                final tempDir = await getTemporaryDirectory();
+                final fileName = _upload!.filePath.split('/').last;
+                final file = File('${tempDir.path}/$fileName');
+                print('Temporary file path: ${file.path}');
+                
+                // Write the file
+                print('Writing file bytes...');
+                await file.writeAsBytes(response.bodyBytes);
+                print('File written successfully');
+                
+                // Open PDF viewer
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Scaffold(
+                        appBar: AppBar(
+                          title: Text(fileName),
+                        ),
+                        body: PDFView(
+                          filePath: file.path,
+                          enableSwipe: true,
+                          swipeHorizontal: false,
+                          autoSpacing: true,
+                          pageFling: true,
+                          pageSnap: true,
+                          fitPolicy: FitPolicy.BOTH,
+                          preventLinkNavigation: false,
+                        ),
+                      ),
+                    ),
+                  );
+                }
               } else {
+                print('Error response body: ${response.body}');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error downloading file: ${response.statusCode} - ${response.body}')),
+                  );
+                }
+              }
+            } catch (e, stackTrace) {
+              print('Error downloading file: $e');
+              print('Stack trace: $stackTrace');
+              if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Could not open file.')),
+                  SnackBar(content: Text('Error: $e')),
                 );
               }
-            },
-            child: Row(
-              children: [
-                const Icon(Icons.insert_drive_file, color: Colors.blue),
-                const SizedBox(width: 8),
-                Expanded(child: Text(_upload!.filePath.split('/').last)),
-                const Icon(Icons.open_in_new, size: 16),
-              ],
-            ),
+            }
+          },
+          child: Row(
+            children: [
+              const Icon(Icons.insert_drive_file, color: Colors.blue),
+              const SizedBox(width: 8),
+              Expanded(child: Text(_upload!.filePath.split('/').last)),
+              const Icon(Icons.open_in_new, size: 16),
+            ],
           ),
-          if (_upload!.status == 'refused')
-            Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: ElevatedButton(
-                onPressed: _pickFile,
-                child: const Text('Re-upload'),
-              ),
-            ),
-        ],
-      );
-    }
+        ),
+      ],
+    );
   }
 }

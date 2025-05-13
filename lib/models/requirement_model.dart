@@ -11,7 +11,7 @@ class Requirement {
 
   factory Requirement.fromJson(Map<String, dynamic> json) {
     return Requirement(
-      id: int.parse(json['id'].toString()),
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       requirementName: json['requirement_name'],
       status: json['status'] is bool ? json['status'] : json['status'] == 1,
     );

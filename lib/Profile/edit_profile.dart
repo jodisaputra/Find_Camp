@@ -4,7 +4,7 @@ import 'package:find_camp/config/api_config.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter/painting.dart'; // Add this import for imageCache
+// Add this import for imageCache
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 

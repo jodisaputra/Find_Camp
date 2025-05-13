@@ -14,6 +14,7 @@ import 'package:find_camp/Profile/setting.dart';
 import 'package:find_camp/isian/form.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:find_camp/Services/auth_service.dart';
+import 'package:find_camp/Services/session_service.dart';
 
 // Constants for route names
 class Routes {
@@ -34,6 +35,10 @@ class Routes {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  // Initialize session
+  final sessionService = SessionService();
+  await sessionService.initializeSession();
 
   runApp(const MyApp());
 }
@@ -82,7 +87,7 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(builder: (context) => const OTPPage());
           case Routes.Form:
             return MaterialPageRoute(
-              builder: (context) => FormScreen(
+              builder: (context) => const FormScreen(
                 countryId: 1,
                 requirementId: 1,
                 requirementName: 'Visa',

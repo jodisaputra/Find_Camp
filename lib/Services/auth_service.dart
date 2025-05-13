@@ -5,18 +5,20 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import '../models/user_model.dart';
-import 'package:logging/logging.dart'; // Add this package for better logging
+import 'package:logging/logging.dart';
+import 'session_service.dart';
 
 class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
       'email',
       'https://www.googleapis.com/auth/userinfo.profile',
-      'openid', // Add this for ID token
+      'openid',
     ],
   );
 
   final Logger _logger = Logger('AuthService');
+  late final SessionService _sessionService;
 
   // Singleton pattern
   static final AuthService _instance = AuthService._internal();
@@ -26,7 +28,7 @@ class AuthService {
   }
 
   AuthService._internal() {
-    // Initialize logging
+    _sessionService = SessionService();
     Logger.root.level = Level.ALL;
     Logger.root.onRecord.listen((record) {
       print('${record.level.name}: ${record.time}: ${record.message}');
@@ -65,8 +67,8 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
-        // Save token and user data
-        await _saveAuthData(data);
+        // Save session data
+        await _sessionService.saveSession(data);
         _logger.info('User registered successfully: $email');
         return {
           'success': true,
@@ -105,8 +107,8 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        // Save token and user data
-        await _saveAuthData(data);
+        // Save session data
+        await _sessionService.saveSession(data);
         return {
           'success': true,
           'user': User.fromJson(data['user']),
@@ -157,8 +159,7 @@ class AuthService {
         };
       }
 
-      _logger
-          .info('Successfully authenticated with Google: ${googleUser.email}');
+      _logger.info('Successfully authenticated with Google: ${googleUser.email}');
 
       // Get authentication details
       final GoogleSignInAuthentication googleAuth =
@@ -191,8 +192,7 @@ class AuthService {
       final requestBody = jsonEncode({
         tokenField: tokenToSend,
       });
-      _logger
-          .fine('Request body prepared (token length: ${tokenToSend.length})');
+      _logger.fine('Request body prepared (token length: ${tokenToSend.length})');
 
       // Send token to Laravel backend with timeout
       final response = await http
@@ -234,8 +234,8 @@ class AuthService {
       }
 
       if (response.statusCode == 200) {
-        // Save token and user data
-        await _saveAuthData(data);
+        // Save session data
+        await _sessionService.saveSession(data);
         _logger.info('Successfully authenticated and saved user data');
         return {
           'success': true,
@@ -258,25 +258,9 @@ class AuthService {
     }
   }
 
-  // Store auth data in SharedPreferences
-  Future<void> _saveAuthData(Map<String, dynamic> data) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', data['access_token']);
-    await prefs.setString('token_type', data['token_type']);
-    await prefs.setString('expires_at', data['expires_at']);
-    await prefs.setString('user', jsonEncode(data['user']));
-  }
-
   // Get current user
   Future<User?> getCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userData = prefs.getString('user');
-
-    if (userData != null) {
-      return User.fromJson(jsonDecode(userData));
-    }
-
-    return null;
+    return _sessionService.getCurrentUser();
   }
 
   // Get token
@@ -287,18 +271,11 @@ class AuthService {
 
   // Check if user is logged in
   Future<bool> isLoggedIn() async {
-    final token = await getToken();
-    return token != null;
+    return _sessionService.isLoggedIn();
   }
 
   // Logout
   Future<void> logout() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-      await _googleSignIn.signOut();
-    } catch (e) {
-      print('Error during logout: $e');
-    }
+    await _sessionService.logout();
   }
 }

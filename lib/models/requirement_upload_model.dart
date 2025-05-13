@@ -21,14 +21,14 @@ class RequirementUpload {
 
   factory RequirementUpload.fromJson(Map<String, dynamic> json) {
     return RequirementUpload(
-      id: int.parse(json['id'].toString()),
-      userId: int.parse(json['user_id'].toString()),
-      countryId: int.parse(json['country_id'].toString()),
-      requirementId: int.parse(json['requirement_id'].toString()),
-      filePath: json['file_path'],
-      status: json['status'],
-      adminNote: json['admin_note'],
-      createdAt: DateTime.parse(json['created_at']),
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      userId: int.tryParse(json['user_id']?.toString() ?? '') ?? 0,
+      countryId: int.tryParse(json['country_id']?.toString() ?? '') ?? 0,
+      requirementId: int.tryParse(json['requirement_id']?.toString() ?? '') ?? 0,
+      filePath: json['file_path']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      adminNote: json['admin_note']?.toString(),
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
     );
   }
 } 

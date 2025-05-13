@@ -9,9 +9,7 @@ import 'package:find_camp/config/api_config.dart';
 import '../models/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../models/requirement_model.dart';
-import '../Services/requirement_service.dart';
-import 'package:find_camp/isian/syarat.dart';
+import 'dart:math';
 
 class MainMenu extends StatefulWidget {
   final String username;
@@ -70,12 +68,16 @@ class _MainMenuState extends State<MainMenu> {
       final userData = prefs.getString('user');
       
       if (userData != null) {
-        print('Found user data in SharedPreferences: ${userData.substring(0, 50)}...');
+        print('Found user data in SharedPreferences: ${userData.substring(0, min(50, userData.length))}...');
         final userMap = jsonDecode(userData);
-        final user = User.fromJson(userMap);
+        print('Decoded user data: ${jsonEncode(userMap)}');
         
-        print('Username: ${user.name}');
-        print('Profile image path: ${user.profileImagePath}');
+        final user = User.fromJson(userMap);
+        print('Parsed user object:');
+        print('- Name: ${user.name}');
+        print('- Email: ${user.email}');
+        print('- Profile Image Path: ${user.profileImagePath}');
+        print('- Profile Image URL: ${user.profileImageUrl}');
         
         if (mounted) {
           setState(() {
@@ -92,8 +94,9 @@ class _MainMenuState extends State<MainMenu> {
           });
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('Error loading user profile directly: $e');
+      print('Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _userLoading = false;
@@ -185,74 +188,77 @@ class _MainMenuState extends State<MainMenu> {
 
   // Get image URL with cache busting
   String _getProfileImageUrl() {
-    if (_currentUser?.profileImagePath == null || _currentUser!.profileImagePath!.isEmpty) {
+    if (_currentUser == null) {
+      print('_currentUser is null');
+      return '';
+    }
+    
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final imagePath = _currentUser!.profileImagePath;
+    
+    print('Profile Image Path from user: $imagePath');
+    
+    if (imagePath == null || imagePath.isEmpty) {
+      print('Image path is empty');
       return '';
     }
 
-    print('Building profile image URL from: ${_currentUser!.profileImagePath}');
+    // Remove leading /storage/ if present
+    final cleanPath = imagePath.startsWith('/storage/') 
+        ? imagePath.substring(9) 
+        : imagePath;
     
-    // Check if the URL already has a domain
-    if (!_currentUser!.profileImagePath!.startsWith('http')) {
-      // Add your API base URL if it's a relative path
-      final url = '${ApiConfig.baseUrl}${_currentUser!.profileImagePath}?t=$_imageTimestamp';
-      print('Generated image URL: $url');
-      return url;
-    }
-
-    // If it already has a domain, just add the timestamp
-    final url = '${_currentUser!.profileImagePath}?t=$_imageTimestamp';
-    print('Generated image URL: $url');
-    return url;
+    // Construct full URL
+    final imageUrl = '${ApiConfig.baseUrl}/storage/$cleanPath';
+    print('Constructed image URL: $imageUrl');
+    
+    // Add cache busting parameter
+    final finalUrl = '$imageUrl?t=$timestamp';
+    print('Final image URL with cache busting: $finalUrl');
+    return finalUrl;
   }
 
   Widget _buildProfileImage() {
     print('Building profile image widget');
     print('Current user: ${_currentUser?.name}');
-    print('Profile path: ${_currentUser?.profileImagePath}');
     
-    if (_userLoading) {
+    final imageUrl = _getProfileImageUrl();
+    print('Image URL for widget: $imageUrl');
+    
+    if (imageUrl.isEmpty) {
+      print('Using default profile image (empty URL)');
       return const CircleAvatar(
         radius: 30,
         backgroundColor: Colors.grey,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: Colors.white,
-        ),
+        child: Icon(Icons.person, size: 30, color: Colors.white),
       );
     }
-    
-    if (_currentUser?.profileImagePath != null && _currentUser!.profileImagePath!.isNotEmpty) {
-      final imageUrl = _getProfileImageUrl();
-      print('Using profile image: $imageUrl');
-      
-      return CircleAvatar(
-        radius: 30,
-        backgroundColor: Colors.grey[200],
-        child: ClipOval(
-          child: Image.network(
-            imageUrl,
-            width: 60,
-            height: 60,
-            fit: BoxFit.cover,
-            // Add cache busting at network image level too
-            headers: const {'cache-control': 'no-cache'},
-            errorBuilder: (context, error, stackTrace) {
-              print('Error loading profile image: $error');
-              return const CircleAvatar(
-                radius: 30,
-                backgroundImage: AssetImage('assets/Image/profile_image.png'),
-              );
-            },
-          ),
+
+    return CircleAvatar(
+      radius: 30,
+      backgroundColor: Colors.grey[200],
+      child: ClipOval(
+        child: Image.network(
+          imageUrl,
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          headers: const {'cache-control': 'no-cache'},
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            print('Loading progress: ${loadingProgress.expectedTotalBytes != null ? '${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}' : 'indeterminate'}');
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            print('Error loading profile image: $error');
+            print('Stack trace: $stackTrace');
+            return const Icon(Icons.person, size: 30, color: Colors.grey);
+          },
         ),
-      );
-    } else {
-      print('Using default profile image');
-      return const CircleAvatar(
-        radius: 30,
-        backgroundImage: AssetImage('assets/Image/profile_image.png'),
-      );
-    }
+      ),
+    );
   }
 
   @override

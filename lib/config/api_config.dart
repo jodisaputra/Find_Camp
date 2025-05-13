@@ -2,7 +2,7 @@ class ApiConfig {
   // Base URL for all API requests (change this for different environments)
   static const String baseUrl = "https://findcamp.saragih.com";
 
-  // API Endpoints
+  // API Endpoints (include /api here for compatibility)
   static const String loginEndpoint = "/api/login";
   static const String googleAuthEndpoint = "/api/auth/google/redirect";
   static const String googleCallbackEndpoint = "/api/auth/google/token";

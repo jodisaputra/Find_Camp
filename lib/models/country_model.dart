@@ -21,9 +21,9 @@ class Country {
     Map<String, dynamic>? region = json['region'];
 
     return Country(
-      id: json['id'],
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       name: json['name'],
-      regionId: json['region_id'],
+      regionId: int.tryParse(json['region_id']?.toString() ?? '') ?? 0,
       regionName: region != null ? region['name'] : '',
       flagUrl: json['flag'],
       rating: double.parse(json['rating'].toString()),

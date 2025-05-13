@@ -11,7 +11,7 @@ class Region {
 
   factory Region.fromJson(Map<String, dynamic> json) {
     return Region(
-      id: json['id'],
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       name: json['name'],
       imageUrl: json['image'],
     );
