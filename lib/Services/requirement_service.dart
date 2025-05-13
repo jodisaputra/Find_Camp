@@ -74,4 +74,23 @@ class RequirementService {
   Future<String> getFileUrlWithToken(int uploadId) async {
     return '${ApiConfig.baseUrl}/api/requirement-uploads/$uploadId/file';
   }
+
+  // Upload a payment file for a requirement upload
+  Future<RequirementUpload> uploadPaymentFile({
+    required int uploadId,
+    required File file,
+    required String token,
+  }) async {
+    final url = '${ApiConfig.baseUrl}/api/requirement-uploads/$uploadId/payment';
+    var request = http.MultipartRequest('POST', Uri.parse(url));
+    request.headers.addAll(ApiConfig.getHeaders(token: token));
+    request.files.add(await http.MultipartFile.fromPath('payment_file', file.path));
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return RequirementUpload.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to upload payment file: ${response.body}');
+    }
+  }
 } 

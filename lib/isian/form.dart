@@ -296,6 +296,74 @@ class _FormScreenState extends State<FormScreen> {
             ],
           ),
         ),
+        // --- Payment Section ---
+        if (_upload!.requirement?.requiresPayment == true) ...[
+          const SizedBox(height: 30),
+          const Divider(),
+          const Text('Payment Document', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          if (_upload!.paymentPath != null)
+            Row(
+              children: [
+                const Icon(Icons.attach_file, color: Colors.green),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_upload!.paymentPath!.split('/').last)),
+                if (_upload!.paymentStatus == 'refused')
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8.0),
+                    child: Text('(Refused)', style: TextStyle(color: Colors.red)),
+                  ),
+                if (_upload!.paymentStatus == 'pending')
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8.0),
+                    child: Text('(Pending)', style: TextStyle(color: Colors.orange)),
+                  ),
+                if (_upload!.paymentStatus == 'accepted')
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8.0),
+                    child: Text('(Accepted)', style: TextStyle(color: Colors.green)),
+                  ),
+              ],
+            ),
+          if (_upload!.paymentPath == null || _upload!.paymentStatus == 'refused')
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: _uploading ? null : () async {
+                    FilePickerResult? result = await FilePicker.platform.pickFiles(
+                      allowMultiple: false,
+                      type: FileType.custom,
+                      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+                      withData: true,
+                    );
+                    if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
+                      setState(() { _uploading = true; _error = null; });
+                      try {
+                        await _service.uploadPaymentFile(
+                          uploadId: _upload!.id,
+                          file: File(result.files.first.path!),
+                          token: _token!,
+                        );
+                        await _loadUpload();
+                        setState(() { _uploading = false; });
+                      } catch (e) {
+                        setState(() { _error = e.toString(); _uploading = false; });
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.upload_file),
+                  label: Text(_upload!.paymentPath == null ? 'Upload Payment File' : 'Re-upload Payment File'),
+                ),
+              ],
+            ),
+          if (_upload!.paymentNote != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text('Payment Note: ${_upload!.paymentNote}', style: const TextStyle(color: Colors.red)),
+            ),
+        ],
       ],
     );
   }
