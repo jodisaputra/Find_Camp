@@ -303,27 +303,90 @@ class _FormScreenState extends State<FormScreen> {
           const Text('Payment Document', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           if (_upload!.paymentPath != null)
-            Row(
-              children: [
-                const Icon(Icons.attach_file, color: Colors.green),
-                const SizedBox(width: 8),
-                Expanded(child: Text(_upload!.paymentPath!.split('/').last)),
-                if (_upload!.paymentStatus == 'refused')
-                  const Padding(
-                    padding: EdgeInsets.only(left: 8.0),
-                    child: Text('(Refused)', style: TextStyle(color: Colors.red)),
-                  ),
-                if (_upload!.paymentStatus == 'pending')
-                  const Padding(
-                    padding: EdgeInsets.only(left: 8.0),
-                    child: Text('(Pending)', style: TextStyle(color: Colors.orange)),
-                  ),
-                if (_upload!.paymentStatus == 'accepted')
-                  const Padding(
-                    padding: EdgeInsets.only(left: 8.0),
-                    child: Text('(Accepted)', style: TextStyle(color: Colors.green)),
-                  ),
-              ],
+            InkWell(
+              onTap: () async {
+                try {
+                  final tempDir = await getTemporaryDirectory();
+                  final fileName = _upload!.paymentPath!.split('/').last;
+                  final file = File('${tempDir.path}/$fileName');
+
+                  // Download the file if not already present
+                  if (!await file.exists()) {
+                    final url = await _service.getPaymentFileUrlWithToken(_upload!.id);
+                    final token = await AuthService().getToken();
+                    final headers = {
+                      'Authorization': 'Bearer $token',
+                      'Accept': '*/*',
+                      'Content-Type': 'application/json',
+                    };
+                    final response = await http.get(Uri.parse(url), headers: headers);
+                    if (response.statusCode == 200) {
+                      await file.writeAsBytes(response.bodyBytes);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error downloading payment file: \\${response.statusCode}')),
+                      );
+                      return;
+                    }
+                  }
+
+                  // Open PDF if it's a PDF, otherwise open with default app
+                  if (fileName.toLowerCase().endsWith('.pdf')) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => Scaffold(
+                          appBar: AppBar(title: Text(fileName)),
+                          body: PDFView(
+                            filePath: file.path,
+                            enableSwipe: true,
+                            swipeHorizontal: false,
+                            autoSpacing: true,
+                            pageFling: true,
+                            pageSnap: true,
+                            fitPolicy: FitPolicy.BOTH,
+                            preventLinkNavigation: false,
+                          ),
+                        ),
+                      ),
+                    );
+                  } else {
+                    await launchUrl(Uri.file(file.path));
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error opening payment file: \\$e')),
+                  );
+                }
+              },
+              child: Row(
+                children: [
+                  const Icon(Icons.attach_file, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(_upload!.paymentPath!.split('/').last)),
+                  const Icon(Icons.open_in_new, size: 16),
+                ],
+              ),
+            ),
+          if (_upload!.paymentStatus != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 0, top: 8.0),
+              child: Text(
+                'Status: ${_upload!.paymentStatus![0].toUpperCase()}${_upload!.paymentStatus!.substring(1)}',
+                style: TextStyle(
+                  color: _upload!.paymentStatus == 'accepted'
+                      ? Colors.green
+                      : _upload!.paymentStatus == 'pending'
+                          ? Colors.orange
+                          : Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          if (_upload!.paymentNote != null && _upload!.paymentStatus == 'refused')
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text('Admin Comment: ${_upload!.paymentNote}', style: const TextStyle(color: Colors.red)),
             ),
           if (_upload!.paymentPath == null || _upload!.paymentStatus == 'refused')
             Column(
@@ -357,11 +420,6 @@ class _FormScreenState extends State<FormScreen> {
                   label: Text(_upload!.paymentPath == null ? 'Upload Payment File' : 'Re-upload Payment File'),
                 ),
               ],
-            ),
-          if (_upload!.paymentNote != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text('Payment Note: ${_upload!.paymentNote}', style: const TextStyle(color: Colors.red)),
             ),
         ],
       ],

@@ -93,4 +93,9 @@ class RequirementService {
       throw Exception('Failed to upload payment file: ${response.body}');
     }
   }
+
+  // Get the payment file download URL with token
+  Future<String> getPaymentFileUrlWithToken(int uploadId) async {
+    return '${ApiConfig.baseUrl}/api/requirement-uploads/$uploadId/payment-file';
+  }
 } 
