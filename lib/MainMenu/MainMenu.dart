@@ -332,37 +332,63 @@ class _MainMenuState extends State<MainMenu> {
   }
 
   Widget _buildGreeting() {
-    return Row(
-      children: [
-        _buildProfileImage(),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Hello Fams!',
-                style: TextStyle(fontSize: 14, color: Colors.grey)),
-            Text(
-              _currentUser?.name ?? widget.username,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF7B2FF2), Color(0xFFF357A8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 18),
+      child: Row(
+        children: [
+          _buildProfileImage(),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Hello Fams!',
+                    style: TextStyle(fontSize: 14, color: Colors.white70)),
+                Text(
+                  _currentUser?.name ?? widget.username,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSearchBar() {
-    return TextField(
-      controller: _searchController,
-      decoration: InputDecoration(
-        hintText: 'Search',
-        prefixIcon: const Icon(Icons.search, color: Colors.grey),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search',
+          prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
         ),
-        filled: true,
-        fillColor: Colors.grey[200],
       ),
     );
   }
@@ -379,20 +405,32 @@ class _MainMenuState extends State<MainMenu> {
   Widget _buildRegionItem(Region region) {
     return GestureDetector(
       onTap: () => _selectRegion(region.name, region.id),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.symmetric(horizontal: 8.0),
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: _selectedRegion == region.name ? Colors.deepPurple.withOpacity(0.12) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            if (_selectedRegion == region.name)
+              BoxShadow(
+                color: Colors.deepPurple.withOpacity(0.18),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
         child: Column(
           children: [
             CircleAvatar(
-              radius: 30,
-              backgroundColor: _selectedRegion == region.name
-                  ? Colors.blueAccent
-                  : Colors.grey[200],
+              radius: 28,
+              backgroundColor: Colors.grey[100],
               child: ClipOval(
                 child: Image.network(
                   region.imageUrl,
-                  width: 60,
-                  height: 60,
+                  width: 56,
+                  height: 56,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return const Icon(Icons.image, size: 30);
@@ -401,7 +439,7 @@ class _MainMenuState extends State<MainMenu> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(region.name, style: const TextStyle(fontSize: 12)),
+            Text(region.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -416,8 +454,8 @@ class _MainMenuState extends State<MainMenu> {
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 childAspectRatio: 0.85,
-                mainAxisSpacing: 5,
-                crossAxisSpacing: 5,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
               ),
               itemCount: _filteredCountries.length,
               itemBuilder: (context, index) {
@@ -442,15 +480,26 @@ class _MainMenuState extends State<MainMenu> {
           ),
         );
       },
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 3,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.deepPurple.withOpacity(0.07),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                 child: Image.network(
                   country.flagUrl ?? '',
                   fit: BoxFit.cover,
@@ -463,47 +512,47 @@ class _MainMenuState extends State<MainMenu> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    Text(
-                      country.name,
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                    Text(
-                      country.regionName ?? '',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ...List.generate(5, (index) {
-                          return Icon(
-                            index < (country.rating?.floor() ?? 0)
-                                ? Icons.star
-                                : Icons.star_border,
-                            color: Colors.amber,
-                            size: 16,
-                          );
-                        }),
-                        const SizedBox(width: 4),
-                        Text(
-                          (country.rating ?? 0).toStringAsFixed(1),
-                          style:
-                              const TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Column(
+                children: [
+                  Text(
+                    country.name,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    country.regionName ?? '',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ...List.generate(5, (index) {
+                        return Icon(
+                          index < (country.rating?.floor() ?? 0)
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: Colors.amber,
+                          size: 16,
+                        );
+                      }),
+                      const SizedBox(width: 4),
+                      Text(
+                        (country.rating ?? 0).toStringAsFixed(1),
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

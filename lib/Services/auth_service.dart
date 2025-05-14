@@ -144,8 +144,7 @@ class AuthService {
     try {
       _logger.info('Starting Google Sign-In process');
 
-      const String fullUrl =
-          '${ApiConfig.baseUrl}${ApiConfig.googleCallbackEndpoint}';
+      final String fullUrl = ApiConfig.googleCallbackEndpoint;
       _logger.info('Full URL being called: $fullUrl');
 
       // Trigger the Google Sign-In flow
@@ -197,7 +196,7 @@ class AuthService {
       // Send token to Laravel backend with timeout
       final response = await http
           .post(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.googleCallbackEndpoint}'),
+        Uri.parse(ApiConfig.googleCallbackEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: requestBody,
       )
