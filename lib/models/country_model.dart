@@ -1,19 +1,19 @@
 class Country {
   final int id;
   final String name;
-  final int regionId;
-  final String regionName;
-  final String flagUrl;
-  final double rating;
+  final int? regionId;
+  final String? regionName;
+  final String? flagUrl;
+  final double? rating;
   final String? description;
 
   Country({
     required this.id,
     required this.name,
-    required this.regionId,
-    required this.regionName,
-    required this.flagUrl,
-    required this.rating,
+    this.regionId,
+    this.regionName,
+    this.flagUrl,
+    this.rating,
     this.description,
   });
 
@@ -22,12 +22,12 @@ class Country {
 
     return Country(
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
-      name: json['name'],
-      regionId: int.tryParse(json['region_id']?.toString() ?? '') ?? 0,
-      regionName: region != null ? region['name'] : '',
-      flagUrl: json['flag'],
-      rating: double.parse(json['rating'].toString()),
-      description: json['description'],
+      name: json['name'] ?? '',
+      regionId: json['region_id'] != null ? int.tryParse(json['region_id'].toString()) : null,
+      regionName: region != null ? region['name'] as String? : null,
+      flagUrl: json['flag'] as String?,
+      rating: json['rating'] != null ? double.tryParse(json['rating'].toString()) : null,
+      description: json['description'] as String?,
     );
   }
 }

@@ -105,7 +105,7 @@ class _CountryScreenState extends State<CountryScreen> {
                                   children: [
                                     ...List.generate(5, (index) {
                                       return Icon(
-                                        index < (_country?.rating.floor() ?? 0)
+                                        index < (_country?.rating?.floor() ?? 0)
                                             ? Icons.star
                                             : Icons.star_border,
                                         color: Colors.amber,

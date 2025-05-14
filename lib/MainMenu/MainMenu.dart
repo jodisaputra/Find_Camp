@@ -10,6 +10,9 @@ import '../models/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:math';
+import 'package:find_camp/isian/task.dart';
+import 'package:find_camp/Consult/consult_page.dart';
+import 'package:find_camp/Profile/profile_page.dart';
 
 class MainMenu extends StatefulWidget {
   final String username;
@@ -38,6 +41,7 @@ class _MainMenuState extends State<MainMenu> {
   User? _currentUser;
   int _imageTimestamp = DateTime.now().millisecondsSinceEpoch;
   bool _userLoading = true;
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -269,58 +273,59 @@ class _MainMenuState extends State<MainMenu> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _isLoading
+    // Home page content
+    final homePage = RefreshIndicator(
+      onRefresh: () async {
+        await _loadUserProfileDirect();
+        await _loadData();
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 25),
+            _buildGreeting(),
+            const SizedBox(height: 20),
+            _buildSearchBar(),
+            const SizedBox(height: 20),
+            if (_searchText.isEmpty) ...[
+              _buildRegionsRow(),
+              const SizedBox(height: 20),
+            ],
+            _buildCountryGrid(),
+          ],
+        ),
+      ),
+    );
+
+    final pages = [
+      _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
               ? Center(
                   child: Text(_errorMessage!,
                       style: const TextStyle(color: Colors.red)))
-              : RefreshIndicator(
-                  onRefresh: () async {
-                    await _loadUserProfileDirect();
-                    await _loadData();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 25),
-                        _buildGreeting(),
-                        const SizedBox(height: 20),
-                        _buildSearchBar(),
-                        const SizedBox(height: 20),
-                        if (_searchText.isEmpty) ...[
-                          _buildRegionsRow(),
-                          const SizedBox(height: 20),
-                        ],
-                        _buildCountryGrid(),
-                      ],
-                    ),
-                  ),
-                ),
+              : homePage,
+      TaskScreen(),
+      ConsultPage(),
+      ProfilePage(
+        username: _currentUser?.name ?? widget.username,
+        email: _currentUser?.email ?? '',
+      ),
+    ];
+
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
+      ),
       bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 0,
+        currentIndex: _currentIndex,
         onTap: (index) {
-          switch (index) {
-            case 0:
-              // Already on main menu
-              break;
-            case 1:
-              Navigator.pushNamed(context, '/task');
-              break;
-            case 2:
-              Navigator.pushNamed(context, '/consult');
-              break;
-            case 3:
-              Navigator.pushNamed(context, '/profile')
-                .then((_) {
-                  // Reload user data when returning from profile
-                  _loadUserProfileDirect();
-                });
-              break;
-          }
+          setState(() {
+            _currentIndex = index;
+          });
         },
       ),
     );
@@ -432,7 +437,7 @@ class _MainMenuState extends State<MainMenu> {
             builder: (context) => CountryScreen(
               countryId: country.id,
               name: country.name,
-              flagAsset: country.flagUrl,
+              flagAsset: country.flagUrl ?? '',
             ),
           ),
         );
@@ -447,7 +452,7 @@ class _MainMenuState extends State<MainMenu> {
             children: [
               Expanded(
                 child: Image.network(
-                  country.flagUrl,
+                  country.flagUrl ?? '',
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
@@ -469,7 +474,7 @@ class _MainMenuState extends State<MainMenu> {
                       textAlign: TextAlign.center,
                     ),
                     Text(
-                      country.regionName,
+                      country.regionName ?? '',
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                       textAlign: TextAlign.center,
                     ),
@@ -479,7 +484,7 @@ class _MainMenuState extends State<MainMenu> {
                       children: [
                         ...List.generate(5, (index) {
                           return Icon(
-                            index < country.rating.floor()
+                            index < (country.rating?.floor() ?? 0)
                                 ? Icons.star
                                 : Icons.star_border,
                             color: Colors.amber,
@@ -488,7 +493,7 @@ class _MainMenuState extends State<MainMenu> {
                         }),
                         const SizedBox(width: 4),
                         Text(
-                          country.rating.toStringAsFixed(1),
+                          (country.rating ?? 0).toStringAsFixed(1),
                           style:
                               const TextStyle(fontSize: 12, color: Colors.grey),
                         ),

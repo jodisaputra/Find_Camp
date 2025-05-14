@@ -98,4 +98,41 @@ class RequirementService {
   Future<String> getPaymentFileUrlWithToken(int uploadId) async {
     return '${ApiConfig.baseUrl}/api/requirement-uploads/$uploadId/payment-file';
   }
+
+  // Get all uploads for the current user
+  Future<List<RequirementUpload>> getAllUserRequirementUploads(String token) async {
+    final url = '${ApiConfig.baseUrl}/api/requirement-uploads';
+    final response = await http.get(
+      Uri.parse(url),
+      headers: ApiConfig.getHeaders(token: token),
+    );
+    print('Status: [4m${response.statusCode}[24m');
+    print('Body: [4m${response.body}[24m');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final uploads = data['data'] as List;
+      return uploads.map((json) => RequirementUpload.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load uploads: Status ${response.statusCode}\n${response.body}');
+    }
+  }
+
+  // Get all uploads grouped by country and requirement
+  Future<Map<int, Map<int, RequirementUpload>>> getGroupedUserRequirementUploads(String token) async {
+    try {
+      final uploads = await getAllUserRequirementUploads(token);
+      final Map<int, Map<int, RequirementUpload>> grouped = {};
+      for (final upload in uploads) {
+        final countryId = upload.countryId;
+        final requirementId = upload.requirementId;
+        if (countryId != null && requirementId != null) {
+          grouped.putIfAbsent(countryId, () => {});
+          grouped[countryId]![requirementId] = upload;
+        }
+      }
+      return grouped;
+    } catch (e) {
+      throw Exception('Error grouping uploads: $e');
+    }
+  }
 } 

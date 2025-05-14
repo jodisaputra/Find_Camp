@@ -55,15 +55,22 @@ class ApiService {
   // Get a specific country by ID
   Future<Map<String, dynamic>> getCountryDetail(int countryId) async {
     final response = await http.get(
-      Uri.parse('${ApiConfig.countriesEndpoint}/$countryId'),
+      Uri.parse('${ApiConfig.baseUrl}/api/countries/$countryId'),
       headers: {'Accept': 'application/json'},
     );
     
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['data'];
+      try {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return data;
+      } catch (e) {
+        print('Error parsing response: $e');
+        throw Exception('Failed to parse country details: $e');
+      }
+    } else if (response.statusCode == 404) {
+      throw Exception('Country not found');
     } else {
-      throw Exception('Failed to load country details: ${response.body}');
+      throw Exception('Failed to load country details: ${response.statusCode} - ${response.body}');
     }
   }
   
@@ -100,20 +107,35 @@ class ApiService {
 
   static Future<List<RequirementUpload>> getRequirementUploads() async {
     final token = await _getToken();
+    if (token == null) {
+      throw Exception('No authentication token found');
+    }
+
     final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/requirement-uploads'),
+      Uri.parse('${ApiConfig.baseUrl}/api/requirement-uploads'),
       headers: ApiConfig.getHeaders(token: token),
     );
 
-    print('Status code: \\${response.statusCode}');
-    print('Response body: \\${response.body}');
+    print('Status code: ${response.statusCode}');
+    print('Response body: ${response.body}');
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> body = json.decode(response.body);
-      final List<dynamic> data = body['data'];
-      return data.map((json) => RequirementUpload.fromJson(json)).toList();
+      try {
+        final Map<String, dynamic> body = json.decode(response.body);
+        if (body['data'] != null) {
+          final List<dynamic> data = body['data'];
+          return data.map((json) => RequirementUpload.fromJson(json)).toList();
+        } else {
+          throw Exception('Invalid response format: missing data field');
+        }
+      } catch (e) {
+        print('Error parsing response: $e');
+        throw Exception('Failed to parse response: $e');
+      }
+    } else if (response.statusCode == 401) {
+      throw Exception('Unauthorized: Please login again');
     } else {
-      throw Exception('Failed to load requirement uploads');
+      throw Exception('Failed to load requirement uploads: ${response.statusCode} - ${response.body}');
     }
   }
 

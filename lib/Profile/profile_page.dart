@@ -143,25 +143,6 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_isLoading) {
       return Scaffold(
         body: const Center(child: CircularProgressIndicator()),
-        bottomNavigationBar: CustomBottomNavigationBar(
-          currentIndex: 3,
-          onTap: (index) {
-            switch (index) {
-              case 0:
-                Navigator.pushNamed(context, '/mainmenu');
-                break;
-              case 1:
-                Navigator.pushNamed(context, '/task');
-                break;
-              case 2:
-                Navigator.pushNamed(context, '/consult');
-                break;
-              case 3:
-                // Do nothing, already on profile
-                break;
-            }
-          },
-        ),
       );
     }
 
@@ -179,25 +160,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
-        ),
-        bottomNavigationBar: CustomBottomNavigationBar(
-          currentIndex: 3,
-          onTap: (index) {
-            switch (index) {
-              case 0:
-                Navigator.pushNamed(context, '/mainmenu');
-                break;
-              case 1:
-                Navigator.pushNamed(context, '/task');
-                break;
-              case 2:
-                Navigator.pushNamed(context, '/consult');
-                break;
-              case 3:
-                // Do nothing, already on profile
-                break;
-            }
-          },
         ),
       );
     }
@@ -284,25 +246,6 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 3,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushNamed(context, '/mainmenu');
-              break;
-            case 1:
-              Navigator.pushNamed(context, '/task');
-              break;
-            case 2:
-              Navigator.pushNamed(context, '/consult');
-              break;
-            case 3:
-              // Do nothing, already on profile
-              break;
-          }
-        },
       ),
     );
   }

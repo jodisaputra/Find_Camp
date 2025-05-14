@@ -66,25 +66,6 @@ class ConsultPage extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 2,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushNamed(context, '/mainmenu');
-              break;
-            case 1:
-              Navigator.pushNamed(context, '/task');
-              break;
-            case 2:
-              Navigator.pushNamed(context, '/consult');
-              break;
-            case 3:
-              Navigator.pushNamed(context, '/profile');
-              break;
-          }
-        },
-      ),
     );
   }
 }
