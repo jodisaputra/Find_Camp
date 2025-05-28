@@ -29,17 +29,23 @@ class RequirementService {
     required int requirementId,
     required String token,
   }) async {
-    final url = '${ApiConfig.baseUrl}/api/requirement-uploads/$countryId/$requirementId';
-    final response = await http.get(
-      Uri.parse(url),
-      headers: ApiConfig.getHeaders(token: token),
-    );
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/requirement-uploads/$countryId/$requirementId');
+    final headers = ApiConfig.getHeaders(token: token);
+    final response = await http.get(url, headers: headers);
     if (response.statusCode == 200) {
-      return RequirementUpload.fromJson(jsonDecode(response.body));
-    } else if (response.statusCode == 404) {
-      return null;
+      final data = json.decode(response.body);
+      print("Requirement upload API response (raw): ${response.body}");
+      print("Requirement upload parsed data: $data");
+      if (data is Map) {
+         print("Requirement (if present): ");
+         print(data['requirement']);
+         print("Requires payment (if present): ");
+         print(data['requirement']?['requires_payment']);
+      }
+      return RequirementUpload.fromJson(data);
     } else {
-      throw Exception('Failed to get upload: ${response.body}');
+      print("Requirement upload API error (status: ${response.statusCode}): ${response.body}");
+      return null;
     }
   }
 

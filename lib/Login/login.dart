@@ -23,13 +23,20 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
+      print('Starting Google Sign-In process...');
+      
       // First test the API connection
+      print('Testing API connection...');
       await _authService.testApiConnection();
+      print('API connection test completed');
 
       // Then proceed with Google Sign-In
+      print('Initiating Google Sign-In...');
       final result = await _authService.signInWithGoogle(context);
+      print('Google Sign-In result: $result');
 
       if (result['success']) {
+        print('Google Sign-In successful, navigating to MainMenu...');
         // Navigate to MainMenu with user info
         Navigator.pushReplacement(
           context,
@@ -40,12 +47,15 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       } else {
+        print('Google Sign-In failed: ${result['message']}');
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${result['message']}')),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error during Google Sign-In: $e');
+      print('Stack trace: $stackTrace');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sorry There Is A Problem >_<: $e')),
       );

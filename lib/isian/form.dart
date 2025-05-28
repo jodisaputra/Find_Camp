@@ -14,7 +14,11 @@ class FormScreen extends StatefulWidget {
   final int countryId;
   final int requirementId;
   final String requirementName;
-  const FormScreen({super.key, required this.countryId, required this.requirementId, required this.requirementName});
+  const FormScreen(
+      {super.key,
+      required this.countryId,
+      required this.requirementId,
+      required this.requirementName});
 
   @override
   _FormScreenState createState() => _FormScreenState();
@@ -36,20 +40,30 @@ class _FormScreenState extends State<FormScreen> {
   }
 
   Future<void> _loadUpload() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     _token = await _getToken();
     try {
-      print('Fetching upload for countryId: \\${widget.countryId}, requirementId: \\${widget.requirementId}');
+      print(
+          'Fetching upload for countryId: \\${widget.countryId}, requirementId: \\${widget.requirementId}');
       final upload = await _service.getUserRequirementUpload(
         countryId: widget.countryId,
         requirementId: widget.requirementId,
         token: _token!,
       );
       print('Fetched upload: \\$upload');
-      setState(() { _upload = upload; _loading = false; });
+      setState(() {
+        _upload = upload;
+        _loading = false;
+      });
     } catch (e) {
       print('Error fetching upload: \\$e');
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -61,16 +75,16 @@ class _FormScreenState extends State<FormScreen> {
         allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
         withData: true,
       );
-      
+
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
         if (file.path != null) {
-          setState(() { 
+          setState(() {
             _selectedFile = File(file.path!);
             _error = null;
           });
         } else {
-          setState(() { 
+          setState(() {
             _error = 'Could not access the selected file';
             _selectedFile = null;
           });
@@ -78,7 +92,7 @@ class _FormScreenState extends State<FormScreen> {
       }
     } catch (e) {
       print('File picker error: $e');
-      setState(() { 
+      setState(() {
         _error = 'Error picking file: ${e.toString()}';
         _selectedFile = null;
       });
@@ -87,7 +101,10 @@ class _FormScreenState extends State<FormScreen> {
 
   Future<void> _uploadFile() async {
     if (_selectedFile == null) return;
-    setState(() { _uploading = true; _error = null; });
+    setState(() {
+      _uploading = true;
+      _error = null;
+    });
     try {
       await _service.uploadRequirementFile(
         countryId: widget.countryId,
@@ -97,9 +114,15 @@ class _FormScreenState extends State<FormScreen> {
       );
       // After upload, reload the upload data from backend
       await _loadUpload();
-      setState(() { _uploading = false; _selectedFile = null; });
+      setState(() {
+        _uploading = false;
+        _selectedFile = null;
+      });
     } catch (e) {
-      setState(() { _error = e.toString(); _uploading = false; });
+      setState(() {
+        _error = e.toString();
+        _uploading = false;
+      });
     }
   }
 
@@ -134,7 +157,8 @@ class _FormScreenState extends State<FormScreen> {
 
   Widget _buildContent() {
     if (_error != null) {
-      return Center(child: Text(_error!, style: const TextStyle(color: Colors.red)));
+      return Center(
+          child: Text(_error!, style: const TextStyle(color: Colors.red)));
     }
     // Show upload form if no upload yet or status is refused
     if (_upload == null || _upload!.status == 'refused') {
@@ -145,10 +169,27 @@ class _FormScreenState extends State<FormScreen> {
   }
 
   Widget _buildUploadForm({bool rejected = false}) {
+    // Debug log: print _upload?.requirement dan requiresPayment
+    print("--- Debug from _buildUploadForm ---");
+    print("Value of _upload: ${_upload}");
+    print("Value of _upload?.requirement: ${_upload?.requirement}");
+    print("Value of _upload?.requirement?.requiresPayment: ${_upload?.requirement?.requiresPayment}");
+    print("--- End Debug from _buildUploadForm ---");
+
+    bool showPaymentMsg = _upload == null || (_upload?.requirement?.requiresPayment == true);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.requirementName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        if (showPaymentMsg)
+          const Padding(
+            padding: EdgeInsets.only(top: 8.0),
+            child: Text(
+              'This document requires payment.',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
         if (rejected) ...[
           const SizedBox(height: 10),
           const Text('Status: Refused', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -190,17 +231,29 @@ class _FormScreenState extends State<FormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.requirementName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(widget.requirementName,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
-        Text('Status: 	${_upload!.status[0].toUpperCase()}${_upload!.status.substring(1)}',
+        if (_upload?.requirement?.requiresPayment != false)
+          const Padding(
+            padding: EdgeInsets.only(top: 8.0),
+            child: Text(
+              'This document requires payment.',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        Text(
+            'Status: 	${_upload!.status[0].toUpperCase()}${_upload!.status.substring(1)}',
             style: TextStyle(
-              color: _upload!.status == 'accepted' ? Colors.green : Colors.orange,
+              color:
+                  _upload!.status == 'accepted' ? Colors.green : Colors.orange,
               fontWeight: FontWeight.bold,
             )),
         if (_upload!.adminNote != null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text('Admin Note: ${_upload!.adminNote}', style: const TextStyle(color: Colors.red)),
+            child: Text('Admin Note: ${_upload!.adminNote}',
+                style: const TextStyle(color: Colors.red)),
           ),
         const SizedBox(height: 20),
         const Text('Your uploaded file:', style: TextStyle(fontSize: 16)),
@@ -211,20 +264,20 @@ class _FormScreenState extends State<FormScreen> {
               print('Starting file download process...');
               print('Upload ID: ${_upload!.id}');
               print('File path: ${_upload!.filePath}');
-              
+
               final url = await _service.getFileUrlWithToken(_upload!.id);
               print('Generated file URL: $url');
-              
+
               final token = await AuthService().getToken();
               print('Using token: ${token?.substring(0, 20) ?? 'null'}...');
-              
+
               final headers = {
                 'Authorization': 'Bearer $token',
                 'Accept': '*/*',
                 'Content-Type': 'application/json',
               };
               print('Request headers: $headers');
-              
+
               print('Making HTTP request to download file...');
               final response = await http.get(
                 Uri.parse(url),
@@ -232,7 +285,7 @@ class _FormScreenState extends State<FormScreen> {
               );
               print('Response status code: ${response.statusCode}');
               print('Response headers: ${response.headers}');
-              
+
               if (response.statusCode == 200) {
                 print('File download successful, creating temporary file...');
                 // Get the temporary directory
@@ -240,12 +293,12 @@ class _FormScreenState extends State<FormScreen> {
                 final fileName = _upload!.filePath.split('/').last;
                 final file = File('${tempDir.path}/$fileName');
                 print('Temporary file path: ${file.path}');
-                
+
                 // Write the file
                 print('Writing file bytes...');
                 await file.writeAsBytes(response.bodyBytes);
                 print('File written successfully');
-                
+
                 // Open PDF viewer
                 if (mounted) {
                   Navigator.push(
@@ -273,7 +326,9 @@ class _FormScreenState extends State<FormScreen> {
                 print('Error response body: ${response.body}');
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error downloading file: ${response.statusCode} - ${response.body}')),
+                    SnackBar(
+                        content: Text(
+                            'Error downloading file: ${response.statusCode} - ${response.body}')),
                   );
                 }
               }
@@ -300,7 +355,8 @@ class _FormScreenState extends State<FormScreen> {
         if (_upload!.requirement?.requiresPayment == true) ...[
           const SizedBox(height: 30),
           const Divider(),
-          const Text('Payment Document', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Payment Document',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           if (_upload!.paymentPath != null)
             InkWell(
@@ -312,19 +368,23 @@ class _FormScreenState extends State<FormScreen> {
 
                   // Download the file if not already present
                   if (!await file.exists()) {
-                    final url = await _service.getPaymentFileUrlWithToken(_upload!.id);
+                    final url =
+                        await _service.getPaymentFileUrlWithToken(_upload!.id);
                     final token = await AuthService().getToken();
                     final headers = {
                       'Authorization': 'Bearer $token',
                       'Accept': '*/*',
                       'Content-Type': 'application/json',
                     };
-                    final response = await http.get(Uri.parse(url), headers: headers);
+                    final response =
+                        await http.get(Uri.parse(url), headers: headers);
                     if (response.statusCode == 200) {
                       await file.writeAsBytes(response.bodyBytes);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error downloading payment file: \\${response.statusCode}')),
+                        SnackBar(
+                            content: Text(
+                                'Error downloading payment file: \\${response.statusCode}')),
                       );
                       return;
                     }
@@ -383,41 +443,66 @@ class _FormScreenState extends State<FormScreen> {
                 ),
               ),
             ),
-          if (_upload!.paymentNote != null && _upload!.paymentStatus == 'refused')
+          if (_upload!.paymentNote != null &&
+              _upload!.paymentStatus == 'refused')
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
-              child: Text('Admin Comment: ${_upload!.paymentNote}', style: const TextStyle(color: Colors.red)),
+              child: Text('Admin Comment: ${_upload!.paymentNote}',
+                  style: const TextStyle(color: Colors.red)),
             ),
-          if (_upload!.paymentPath == null || _upload!.paymentStatus == 'refused')
+          if (_upload!.paymentPath == null ||
+              _upload!.paymentStatus == 'refused')
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
                 ElevatedButton.icon(
-                  onPressed: _uploading ? null : () async {
-                    FilePickerResult? result = await FilePicker.platform.pickFiles(
-                      allowMultiple: false,
-                      type: FileType.custom,
-                      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
-                      withData: true,
-                    );
-                    if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
-                      setState(() { _uploading = true; _error = null; });
-                      try {
-                        await _service.uploadPaymentFile(
-                          uploadId: _upload!.id,
-                          file: File(result.files.first.path!),
-                          token: _token!,
-                        );
-                        await _loadUpload();
-                        setState(() { _uploading = false; });
-                      } catch (e) {
-                        setState(() { _error = e.toString(); _uploading = false; });
-                      }
-                    }
-                  },
+                  onPressed: _uploading
+                      ? null
+                      : () async {
+                          FilePickerResult? result =
+                              await FilePicker.platform.pickFiles(
+                            allowMultiple: false,
+                            type: FileType.custom,
+                            allowedExtensions: [
+                              'jpg',
+                              'jpeg',
+                              'png',
+                              'pdf',
+                              'doc',
+                              'docx'
+                            ],
+                            withData: true,
+                          );
+                          if (result != null &&
+                              result.files.isNotEmpty &&
+                              result.files.first.path != null) {
+                            setState(() {
+                              _uploading = true;
+                              _error = null;
+                            });
+                            try {
+                              await _service.uploadPaymentFile(
+                                uploadId: _upload!.id,
+                                file: File(result.files.first.path!),
+                                token: _token!,
+                              );
+                              await _loadUpload();
+                              setState(() {
+                                _uploading = false;
+                              });
+                            } catch (e) {
+                              setState(() {
+                                _error = e.toString();
+                                _uploading = false;
+                              });
+                            }
+                          }
+                        },
                   icon: const Icon(Icons.upload_file),
-                  label: Text(_upload!.paymentPath == null ? 'Upload Payment File' : 'Re-upload Payment File'),
+                  label: Text(_upload!.paymentPath == null
+                      ? 'Upload Payment File'
+                      : 'Re-upload Payment File'),
                 ),
               ],
             ),
