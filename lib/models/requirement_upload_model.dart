@@ -13,6 +13,7 @@ class RequirementUpload {
   final String? paymentStatus;
   final String? paymentNote;
   final Requirement? requirement;
+  final String? adminDocumentPath;
 
   RequirementUpload({
     required this.id,
@@ -27,6 +28,7 @@ class RequirementUpload {
     this.paymentStatus,
     this.paymentNote,
     this.requirement,
+    this.adminDocumentPath,
   });
 
   factory RequirementUpload.fromJson(Map<String, dynamic> json) {
@@ -43,6 +45,7 @@ class RequirementUpload {
       paymentStatus: json['payment_status']?.toString(),
       paymentNote: json['payment_note']?.toString(),
       requirement: json['requirement'] != null ? Requirement.fromJson(json['requirement']) : null,
+      adminDocumentPath: json['admin_document_path'],
     );
   }
 } 

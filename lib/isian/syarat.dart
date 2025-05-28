@@ -69,6 +69,7 @@ class _SyaratScreenState extends State<SyaratScreen> {
                           countryId: widget.countryId,
                           requirementId: req.id,
                           requirementName: req.requirementName,
+                          notes: req.notes,
                         ),
                       ),
                     );

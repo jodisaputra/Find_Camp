@@ -14,11 +14,13 @@ class FormScreen extends StatefulWidget {
   final int countryId;
   final int requirementId;
   final String requirementName;
+  final String? notes;
   const FormScreen(
       {super.key,
       required this.countryId,
       required this.requirementId,
-      required this.requirementName});
+      required this.requirementName,
+      this.notes});
 
   @override
   _FormScreenState createState() => _FormScreenState();
@@ -174,6 +176,7 @@ class _FormScreenState extends State<FormScreen> {
     print("Value of _upload: ${_upload}");
     print("Value of _upload?.requirement: ${_upload?.requirement}");
     print("Value of _upload?.requirement?.requiresPayment: ${_upload?.requirement?.requiresPayment}");
+    print("Value of _upload?.requirement?.notes: ${_upload?.requirement?.notes}");
     print("--- End Debug from _buildUploadForm ---");
 
     bool showPaymentMsg = _upload == null || (_upload?.requirement?.requiresPayment == true);
@@ -182,14 +185,44 @@ class _FormScreenState extends State<FormScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.requirementName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        if (showPaymentMsg)
-          const Padding(
-            padding: EdgeInsets.only(top: 8.0),
-            child: Text(
-              'This document requires payment.',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.shade200),
           ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Notes:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.notes ?? 'No additional notes for this requirement.',
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
         if (rejected) ...[
           const SizedBox(height: 10),
           const Text('Status: Refused', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -223,6 +256,69 @@ class _FormScreenState extends State<FormScreen> {
             child: _uploading ? const CircularProgressIndicator() : const Text('Upload'),
           ),
         ),
+        if (_upload?.adminDocumentPath != null) ...[
+          const SizedBox(height: 20),
+          const Text('Admin Document:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          InkWell(
+            onTap: () async {
+              try {
+                String url = _upload!.adminDocumentPath!;
+                if (!url.startsWith('http')) {
+                  url = ApiConfig.baseUrl + (url.startsWith('/') ? url : '/$url');
+                }
+                print('Download admin document from: $url');
+                final response = await http.get(Uri.parse(url));
+                if (response.statusCode == 200) {
+                  final tempDir = await getTemporaryDirectory();
+                  final fileName = url.split('/').last;
+                  final file = File('${tempDir.path}/$fileName');
+                  await file.writeAsBytes(response.bodyBytes);
+                  if (fileName.toLowerCase().endsWith('.pdf')) {
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => Scaffold(
+                            appBar: AppBar(title: Text(fileName)),
+                            body: PDFView(
+                              filePath: file.path,
+                              enableSwipe: true,
+                              swipeHorizontal: false,
+                              autoSpacing: true,
+                              pageFling: true,
+                              pageSnap: true,
+                              fitPolicy: FitPolicy.BOTH,
+                              preventLinkNavigation: false,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                  } else {
+                    await launchUrl(Uri.file(file.path));
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to download admin document.')),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e')),
+                );
+              }
+            },
+            child: Row(
+              children: [
+                const Icon(Icons.file_present, color: Colors.green),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_upload!.adminDocumentPath!.split('/').last)),
+                const Icon(Icons.open_in_new, size: 16),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -233,15 +329,44 @@ class _FormScreenState extends State<FormScreen> {
       children: [
         Text(widget.requirementName,
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
-        if (_upload?.requirement?.requiresPayment != false)
-          const Padding(
-            padding: EdgeInsets.only(top: 8.0),
-            child: Text(
-              'This document requires payment.',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.shade200),
           ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Notes:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.notes ?? 'No additional notes for this requirement.',
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
         Text(
             'Status: 	${_upload!.status[0].toUpperCase()}${_upload!.status.substring(1)}',
             style: TextStyle(
@@ -506,6 +631,69 @@ class _FormScreenState extends State<FormScreen> {
                 ),
               ],
             ),
+        ],
+        if (_upload?.adminDocumentPath != null) ...[
+          const SizedBox(height: 20),
+          const Text('Admin Document:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          InkWell(
+            onTap: () async {
+              try {
+                String url = _upload!.adminDocumentPath!;
+                if (!url.startsWith('http')) {
+                  url = ApiConfig.baseUrl + (url.startsWith('/') ? url : '/storage/$url');
+                }
+                print('Download admin document from: $url');
+                final response = await http.get(Uri.parse(url));
+                if (response.statusCode == 200) {
+                  final tempDir = await getTemporaryDirectory();
+                  final fileName = url.split('/').last;
+                  final file = File('${tempDir.path}/$fileName');
+                  await file.writeAsBytes(response.bodyBytes);
+                  if (fileName.toLowerCase().endsWith('.pdf')) {
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => Scaffold(
+                            appBar: AppBar(title: Text(fileName)),
+                            body: PDFView(
+                              filePath: file.path,
+                              enableSwipe: true,
+                              swipeHorizontal: false,
+                              autoSpacing: true,
+                              pageFling: true,
+                              pageSnap: true,
+                              fitPolicy: FitPolicy.BOTH,
+                              preventLinkNavigation: false,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                  } else {
+                    await launchUrl(Uri.file(file.path));
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to download admin document.')),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e')),
+                );
+              }
+            },
+            child: Row(
+              children: [
+                const Icon(Icons.file_present, color: Colors.green),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_upload!.adminDocumentPath!.split('/').last)),
+                const Icon(Icons.open_in_new, size: 16),
+              ],
+            ),
+          ),
         ],
       ],
     );
