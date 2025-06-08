@@ -14,7 +14,10 @@ class AuthService {
       'email',
       'https://www.googleapis.com/auth/userinfo.profile',
       'openid',
+      'https://www.googleapis.com/auth/userinfo.email',
     ],
+    clientId: '1035961176435-84h7h81jl70kpsr7qe41bjh87j6t5tk0.apps.googleusercontent.com',
+    serverClientId: '1035961176435-dpd39tp1l9vpvph40p0a54366l8e94j9.apps.googleusercontent.com',
   );
 
   final Logger _logger = Logger('AuthService');
@@ -143,11 +146,14 @@ class AuthService {
   Future<Map<String, dynamic>> signInWithGoogle(BuildContext context) async {
     try {
       _logger.info('Starting Google Sign-In process');
-
-      final String fullUrl = ApiConfig.googleCallbackEndpoint;
-      _logger.info('Full URL being called: $fullUrl');
+      _logger.info('Package name: com.example.find_camp');
+      _logger.info('Scopes requested: ${_googleSignIn.scopes}');
+      _logger.info('Google Sign In configuration:');
+      _logger.info('- Client ID: ${_googleSignIn.clientId}');
+      _logger.info('- Server Client ID: ${_googleSignIn.serverClientId}');
 
       // Trigger the Google Sign-In flow
+      _logger.info('Attempting to sign in with Google...');
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -158,94 +164,84 @@ class AuthService {
         };
       }
 
-      _logger.info('Successfully authenticated with Google: ${googleUser.email}');
+      _logger.info('Successfully authenticated with Google:');
+      _logger.info('- Email: ${googleUser.email}');
+      _logger.info('- User ID: ${googleUser.id}');
+      _logger.info('- Display Name: ${googleUser.displayName}');
+      _logger.info('- Photo URL: ${googleUser.photoUrl}');
+      _logger.info('- Server Auth Code: ${googleUser.serverAuthCode}');
 
       // Get authentication details
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      _logger.info('ID Token: ${googleAuth.idToken ?? "NULL"}');
-      _logger.info('Access Token: ${googleAuth.accessToken ?? "NULL"}');
-
-      // Check if either token is available
-      String tokenToSend;
-      String tokenField;
-
-      if (googleAuth.idToken != null && googleAuth.idToken!.isNotEmpty) {
-        _logger.info('Using ID token for authentication');
-        tokenToSend = googleAuth.idToken!;
-        tokenField = 'id_token';
-      } else if (googleAuth.accessToken != null &&
-          googleAuth.accessToken!.isNotEmpty) {
-        _logger.info('Using access token as fallback');
-        tokenToSend = googleAuth.accessToken!;
-        tokenField = 'access_token';
-      } else {
-        _logger.severe('Failed to obtain any token from Google');
+      _logger.info('Getting authentication tokens...');
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      // Validate ID token
+      if (googleAuth.idToken == null) {
+        _logger.severe('ID token is null after Google authentication');
+        _logger.severe('Access token: ${googleAuth.accessToken}');
+        _logger.severe('Server auth code: ${googleUser.serverAuthCode}');
         return {
           'success': false,
-          'message': 'Failed to obtain authentication tokens from Google',
+          'message': 'Failed to get ID token from Google. Please check Google Cloud Console and Firebase Console configuration.',
         };
       }
 
-      // Prepare the request body
-      final requestBody = jsonEncode({
-        tokenField: tokenToSend,
-      });
-      _logger.fine('Request body prepared (token length: ${tokenToSend.length})');
+      // Log untuk debugging
+      _logger.info('Got authentication tokens:');
+      _logger.info('- ID Token length: ${googleAuth.idToken?.length}');
+      _logger.info('- Access Token length: ${googleAuth.accessToken?.length}');
+      _logger.info('- ID Token: ${googleAuth.idToken}');
 
-      // Send token to Laravel backend with timeout
+      // Prepare the request body with all available tokens
+      final requestBody = jsonEncode({
+        'id_token': googleAuth.idToken,
+        'access_token': googleAuth.accessToken,
+        'server_auth_code': googleUser.serverAuthCode,
+        'email': googleUser.email,
+        'user_id': googleUser.id,
+        'display_name': googleUser.displayName,
+        'photo_url': googleUser.photoUrl,
+      });
+
+      _logger.info('Sending tokens to backend...');
+      _logger.info('Backend URL: ${ApiConfig.googleCallbackEndpoint}');
+      _logger.info('Request body: $requestBody');
+
+      // Send token to Laravel backend
       final response = await http
           .post(
         Uri.parse(ApiConfig.googleCallbackEndpoint),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Platform': 'flutter',
+          'X-Client-ID': _googleSignIn.serverClientId ?? '',
+        },
         body: requestBody,
       )
-          .timeout(const Duration(seconds: 30), onTimeout: () {
-        _logger.severe('Request timed out after 30 seconds');
-        throw Exception('Connection timeout');
-      });
+          .timeout(const Duration(seconds: 30));
 
-      _logger.info(
-          'Received response from backend. Status code: ${response.statusCode}');
-      _logger.fine(
-          'Response body: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}...');
-
-      // Check if response is valid JSON
-      if (response.body.trim().startsWith('<!DOCTYPE html>')) {
-        _logger.severe(
-            'Received HTML instead of JSON. Server may be returning an error page.');
-        return {
-          'success': false,
-          'message': 'Server returned HTML instead of JSON. Check server logs.',
-        };
-      }
-
-      Map<String, dynamic> data;
-      try {
-        data = jsonDecode(response.body);
-      } catch (e) {
-        _logger.severe('Failed to parse response as JSON', e);
-        return {
-          'success': false,
-          'message':
-              'Invalid response format: ${response.body.substring(0, 100)}...',
-        };
-      }
+      _logger.info('Backend response:');
+      _logger.info('- Status code: ${response.statusCode}');
+      _logger.info('- Headers: ${response.headers}');
+      _logger.info('- Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        // Save session data
+        final data = jsonDecode(response.body);
         await _sessionService.saveSession(data);
-        _logger.info('Successfully authenticated and saved user data');
         return {
           'success': true,
           'user': User.fromJson(data['user']),
         };
       } else {
-        _logger.warning(
-            'Authentication failed with status code: ${response.statusCode}');
+        final errorData = jsonDecode(response.body);
+        _logger.severe('Backend authentication failed:');
+        _logger.severe('- Status code: ${response.statusCode}');
+        _logger.severe('- Error: ${errorData['error']}');
         return {
           'success': false,
-          'message': data['error'] ?? 'Failed to authenticate with Google',
+          'message': 'Failed to authenticate with backend: ${response.body}',
+          'error_details': errorData,
         };
       }
     } catch (e, stackTrace) {
@@ -255,6 +251,17 @@ class AuthService {
         'message': 'An error occurred: $e',
       };
     }
+  }
+
+  // Helper method untuk mendapatkan device ID
+  Future<String> _getDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? deviceId = prefs.getString('device_id');
+    if (deviceId == null) {
+      deviceId = DateTime.now().millisecondsSinceEpoch.toString();
+      await prefs.setString('device_id', deviceId);
+    }
+    return deviceId;
   }
 
   // Get current user

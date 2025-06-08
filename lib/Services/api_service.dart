@@ -59,9 +59,13 @@ class ApiService {
       headers: {'Accept': 'application/json'},
     );
     
+    print('Country Detail API Response Status: ${response.statusCode}');
+    print('Country Detail API Response Body: ${response.body}');
+    
     if (response.statusCode == 200) {
       try {
         final Map<String, dynamic> data = json.decode(response.body);
+        print('Parsed Country Detail Data: $data');
         return data;
       } catch (e) {
         print('Error parsing response: $e');

@@ -35,11 +35,39 @@ class _CountryScreenState extends State<CountryScreen> {
   Future<void> _loadCountryDetails() async {
     try {
       final countryData = await _apiService.getCountryDetail(widget.countryId);
+      print('Country Screen received data: $countryData');
+      
+      // Handle the data based on its structure
+      dynamic countryJson;
+      if (countryData is Map) {
+        if (countryData['data'] != null) {
+          // If the response has a 'data' wrapper
+          countryJson = countryData['data'];
+          print('Found country in data wrapper: $countryJson');
+        } else if (countryData['country'] != null) {
+          // If the response has a 'country' wrapper
+          countryJson = countryData['country'];
+          print('Found country in country wrapper: $countryJson');
+        } else {
+          // If the response is the country data directly
+          countryJson = countryData;
+          print('Using raw data as country: $countryJson');
+        }
+      } else {
+        print('Unexpected data type: ${countryData.runtimeType}');
+        throw Exception('Unexpected data format from API');
+      }
+      
+      print('Final countryJson before parsing: $countryJson');
       setState(() {
-        _country = Country.fromJson(countryData);
+        _country = Country.fromJson(countryJson);
+        print('Parsed country object: $_country');
+        print('Description after parsing: ${_country?.description}');
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error loading country details: $e');
+      print('Stack trace: $stackTrace');
       setState(() {
         _errorMessage = 'Failed to load country details: $e';
         _isLoading = false;

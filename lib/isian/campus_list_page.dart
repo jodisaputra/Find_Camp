@@ -127,22 +127,6 @@ class _CampusListPageState extends State<CampusListPage> {
                         );
                       },
                     ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 1,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushNamed(context, '/mainmenu');
-              break;
-            case 1:
-              Navigator.pushNamed(context, '/consult');
-              break;
-            case 2:
-              Navigator.pushNamed(context, '/profile');
-              break;
-          }
-        },
-      ),
     );
   }
 }

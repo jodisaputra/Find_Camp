@@ -1,10 +1,13 @@
 import 'package:find_camp/Widget/navbar.dart';
 import 'package:find_camp/config/api_config.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:find_camp/Login/login.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../models/user_model.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/rendering.dart';
 
 class ProfilePage extends StatefulWidget {
   final String username;
@@ -219,15 +222,63 @@ class _ProfilePageState extends State<ProfilePage> {
               leading: const Icon(Icons.support_agent, color: Colors.green),
               title: const Text('Contact Us'),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                // Navigate to contact page
+              onTap: () async {
+                const email = 'finfamsconsultant@gmail.com';
+                try {
+                  final Uri emailUri = Uri(
+                    scheme: 'mailto',
+                    path: email,
+                  );
+                  
+                  await launchUrl(emailUri);
+                } catch (e) {
+                  if (mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Contact Support'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Could not open email app. You can:'),
+                            const SizedBox(height: 8),
+                            const Text('1. Open Gmail manually'),
+                            const Text('2. Copy the email address'),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Support Email:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const Text(email),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Clipboard.setData(const ClipboardData(text: email));
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Email copied to clipboard'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            child: const Text('Copy Email'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }
               },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings, color: Colors.grey),
-              title: const Text('Settings'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => Navigator.pushNamed(context, '/settings'),
             ),
             const SizedBox(height: 20),
             ListTile(

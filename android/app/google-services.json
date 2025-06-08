@@ -15,11 +15,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "1035961176435-tku6751vpmee51fs95kv2skuonms2gun.apps.googleusercontent.com",
+          "client_id": "1035961176435-84h7h81jl70kpsr7qe41bjh87j6t5tk0.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.find_camp",
-            "certificate_hash": "327753025fea8a40b646d43978ad54983fa87851"
+            "certificate_hash": "d4a3b564edb9e97967889d2434fe8f95b7d1ab89"
           }
         }
       ],

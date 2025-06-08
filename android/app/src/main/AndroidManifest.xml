@@ -14,13 +14,25 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="whatsapp" />
         </intent>
+
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="mailto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="message/rfc822" />
+        </intent>
+        <package android:name="com.google.android.gm" />
     </queries>
 
     <application
         android:networkSecurityConfig="@xml/network_security_config"
-        android:label="findcamp"
+        android:label="Find Camp"
+        android:name="${applicationName}"
         android:enableOnBackInvokedCallback="true"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -30,15 +30,10 @@ android {
     // Add signing configs
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-            } else {
-                // Fallback to debug signing if no keystore properties found
-                signingConfig signingConfigs.debug
-            }
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
         }
     }
 
@@ -58,6 +53,9 @@ android {
         // TODO: Add the dependencies for Firebase products you want to use
         // When using the BoM, don't specify versions in Firebase dependencies
         implementation("com.google.firebase:firebase-analytics")
+        
+        // Add Google Play Services Auth
+        implementation 'com.google.android.gms:play-services-auth:20.7.0'
 
         // Add the dependencies for any other desired Firebase products
         // https://firebase.google.com/docs/android/setup#available-libraries
@@ -74,4 +72,75 @@ android {
 
 flutter {
     source = "../.."
+}
+
+task printDebugSigningReport {
+    doLast {
+        def debugKeystore = android.signingConfigs.debug.storeFile
+        if (debugKeystore != null) {
+            exec {
+                commandLine 'keytool', '-list', '-v',
+                        '-keystore', debugKeystore,
+                        '-alias', android.signingConfigs.debug.keyAlias,
+                        '-storepass', android.signingConfigs.debug.storePassword,
+                        '-keypass', android.signingConfigs.debug.keyPassword
+            }
+        }
+    }
+}
+
+task printReleaseSigningReport {
+    doLast {
+        def releaseKeystore = file('my-release-key.jks')
+        if (releaseKeystore.exists()) {
+            exec {
+                workingDir 'app'
+                commandLine 'keytool', '-list', '-v',
+                        '-keystore', 'my-release-key.jks',
+                        '-alias', 'upload',  // Ganti dengan alias keystore Anda
+                        '-storepass', 'your_keystore_password',  // Ganti dengan password keystore Anda
+                        '-keypass', 'your_key_password'  // Ganti dengan password key Anda
+            }
+        }
+    }
+}
+
+// Task untuk mendapatkan SHA-1 menggunakan Java dari Android SDK
+task getReleaseSha1 {
+    doLast {
+        def keystoreFile = file('my-release-key.jks')
+        if (keystoreFile.exists()) {
+            def javaHome = System.getenv('JAVA_HOME')
+            def androidHome = System.getenv('ANDROID_HOME')
+            
+            if (androidHome) {
+                def keytoolPath = new File(androidHome, 'jre/bin/keytool').absolutePath
+                if (new File(keytoolPath).exists()) {
+                    println "Mencoba mendapatkan SHA-1 menggunakan keytool dari Android SDK..."
+                    exec {
+                        commandLine keytoolPath, '-list', '-v',
+                                '-keystore', keystoreFile.absolutePath,
+                                '-alias', 'upload'
+                    }
+                } else {
+                    println "Keytool tidak ditemukan di Android SDK. Silakan gunakan Android Studio:"
+                    println "1. Buka Android Studio"
+                    println "2. Buka project Find_Camp"
+                    println "3. Di panel kanan, klik icon Gradle (icon gajah)"
+                    println "4. Expand: Find_Camp > Tasks > android"
+                    println "5. Double click pada 'signingReport'"
+                }
+            } else {
+                println "ANDROID_HOME tidak ditemukan. Silakan gunakan Android Studio:"
+                println "1. Buka Android Studio"
+                println "2. Buka project Find_Camp"
+                println "3. Di panel kanan, klik icon Gradle (icon gajah)"
+                println "4. Expand: Find_Camp > Tasks > android"
+                println "5. Double click pada 'signingReport'"
+            }
+        } else {
+            println "Keystore tidak ditemukan di: ${keystoreFile.absolutePath}"
+            println "Pastikan file my-release-key.jks ada di folder android/app/"
+        }
+    }
 }

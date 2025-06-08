@@ -6,6 +6,7 @@ class ApiConfig {
   static const String loginEndpoint = "$baseUrl/api/login";
   static const String googleAuthEndpoint = "$baseUrl/api/auth/google/redirect";
   static const String googleCallbackEndpoint = "$baseUrl/api/auth/google/token";
+  static const String deviceManagementEndpoint = "$baseUrl/api/auth/devices";
   static const String regionsEndpoint = "$baseUrl/api/regions";
   static const String countriesEndpoint = "$baseUrl/api/countries";
   static const String requirementsEndpoint = "$baseUrl/api/requirements";
@@ -15,6 +16,7 @@ class ApiConfig {
     Map<String, String> headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'X-Platform': 'flutter',
     };
 
     if (token != null) {
